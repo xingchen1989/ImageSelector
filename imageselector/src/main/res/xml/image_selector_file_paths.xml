@@ -1,9 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <paths>
-        <!-- 这个是保存拍照图片的路径,必须配置。-->
-        <external-path
-            name="images"
-            path="Pictures" />
+        <files-path
+            name="file_storage_root"
+            path="." />
+        <external-files-path
+            name="external_file_root"
+            path="." />
+        <!--
+        <files-path name="name" path="path" /> 对应getFilesDir()。
+        <cache-path name="name" path="path" /> 对应getCacheDir()。
+        <external-path name="name" path="path" /> 对应Environment.getExternalStorageDirectory()。
+        <external-files-path name="name" path="path" /> 对应getExternalFilesDir()。
+        <external-cache-path name="name" path="path" /> 对应getExternalCacheDir()。
+        name属性值可以随便填 path属性值表示共享的具体路径，设置为空，表示将整个SD卡目录进行共享，也可以设置共享的具体路径
+        -->
     </paths>
 </resources>

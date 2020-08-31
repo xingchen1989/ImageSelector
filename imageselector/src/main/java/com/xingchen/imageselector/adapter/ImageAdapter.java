@@ -180,9 +180,31 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
         }
     }
 
+    /**
+     * 刷新列表
+     *
+     * @param imageList
+     */
     public void refresh(ArrayList<Image> imageList) {
         mTotalImages = imageList;
         notifyDataSetChanged();
+    }
+
+    /**
+     * 获取第一个可见项
+     *
+     * @param firstVisibleItem
+     * @return
+     */
+    public Image getFirstVisibleImage(int firstVisibleItem) {
+        if (mTotalImages != null && !mTotalImages.isEmpty()) {
+            if (config.enableCamera) {
+                return mTotalImages.get(firstVisibleItem > 0 ? firstVisibleItem - 1 : 0);
+            } else {
+                return mTotalImages.get(firstVisibleItem);
+            }
+        }
+        return null;
     }
 
     public ArrayList<Image> getTotalImages() {
