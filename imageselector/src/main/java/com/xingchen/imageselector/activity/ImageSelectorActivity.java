@@ -6,6 +6,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -14,6 +15,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.view.View;
@@ -50,6 +52,8 @@ import com.xingchen.imageselector.utils.ImageSelector;
 import com.xingchen.imageselector.utils.VersionUtils;
 
 import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -59,6 +63,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
     private static final int PERMISSION_READ_EXTERNAL_REQUEST_CODE = 0x00000011;
     private static final int PERMISSION_CAMERA_REQUEST_CODE = 0x00000012;
 
+    private View viewMask;
     private TextView tvTime;
     private TextView tvConfirm;
     private TextView tvFolderName;
@@ -69,17 +74,19 @@ public class ImageSelectorActivity extends AppCompatActivity {
     private RelativeLayout btnFolder;
     private RecyclerView rvImage;
     private RecyclerView rvFolder;
-    private View viewMask;
     private ImageAdapter mImageAdapter;
     private FolderAdapter mFolderAdapter;
-    private RequestConfig config;
-    private Uri mCameraUri;
 
+    private boolean isFolderOpen;
+    private Uri mCameraUri;
+    private RequestConfig config;
     private Handler mHideHandler = new Handler();
     private Runnable mHide = new Runnable() {
         @Override
         public void run() {
-            ObjectAnimator.ofFloat(tvTime, "alpha", 1, 0).setDuration(300).start();
+            if (tvTime.getAlpha() == 1) {
+                ObjectAnimator.ofFloat(tvTime, "alpha", 1, 0).setDuration(300).start();
+            }
         }
     };
 
@@ -161,6 +168,12 @@ public class ImageSelectorActivity extends AppCompatActivity {
                 finish();
             }
         });
+        viewMask.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                closeFolder();
+            }
+        });
         btnConfirm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -178,16 +191,11 @@ public class ImageSelectorActivity extends AppCompatActivity {
         btnFolder.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                viewMask.setVisibility(View.VISIBLE);
-                ObjectAnimator animator = ObjectAnimator.ofFloat(rvFolder, "translationY", rvFolder.getHeight(), 0).setDuration(300);
-                animator.addListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationStart(Animator animation) {
-                        super.onAnimationStart(animation);
-                        rvFolder.setVisibility(View.VISIBLE);
-                    }
-                });
-                animator.start();
+                if (isFolderOpen) {
+                    closeFolder();
+                } else {
+                    openFolder();
+                }
             }
         });
         rvImage.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -264,6 +272,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
             @Override
             public void OnFolderSelect(ImageFolder folder) {
                 refreshImages(folder);
+                closeFolder();
             }
         });
         rvFolder.setAdapter(mFolderAdapter);
@@ -289,7 +298,45 @@ public class ImageSelectorActivity extends AppCompatActivity {
         if (folder != null) {
             tvFolderName.setText(folder.getFolderName());
             mImageAdapter.refresh(folder.getImageList());
+            if (tvTime.getAlpha() == 0) {
+                mHideHandler.postDelayed(mHide, 1500);
+                ObjectAnimator.ofFloat(tvTime, "alpha", 0, 1).setDuration(300).start();
+            }
         }
+    }
+
+    /**
+     * 打开文件夹
+     */
+    private void openFolder() {
+        isFolderOpen = true;
+        viewMask.setVisibility(View.VISIBLE);
+        ObjectAnimator animator = ObjectAnimator.ofFloat(rvFolder, "translationY", rvFolder.getHeight(), 0).setDuration(300);
+        animator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+                super.onAnimationStart(animation);
+                rvFolder.setVisibility(View.VISIBLE);
+            }
+        });
+        animator.start();
+    }
+
+    /**
+     * 收起文件夹
+     */
+    private void closeFolder() {
+        isFolderOpen = false;
+        viewMask.setVisibility(View.INVISIBLE);
+        ObjectAnimator animator = ObjectAnimator.ofFloat(rvFolder, "translationY", 0, rvFolder.getHeight()).setDuration(300);
+        animator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                super.onAnimationEnd(animation);
+                rvFolder.setVisibility(View.GONE);
+            }
+        });
+        animator.start();
     }
 
     /**
@@ -355,7 +402,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
      * 加载图片并且更新视图
      */
     private void loadImageAndUpdateView() {
-        ImageModel.loadImage(this, new ImageModel.DataCallback() {
+        ImageModel.getInstance().loadImage(this, false, new ImageModel.DataCallback() {
             @Override
             public void onSuccess(final ArrayList<ImageFolder> imageFolders) {
                 runOnUiThread(new Runnable() {
@@ -379,8 +426,6 @@ public class ImageSelectorActivity extends AppCompatActivity {
             if (image != null) {
                 String time = DateUtils.getImageTime(this, image.getAddedTime());
                 tvTime.setText(time);
-                mHideHandler.removeCallbacks(mHide);
-                mHideHandler.postDelayed(mHide, 1500);
             }
         }
     }
@@ -494,6 +539,35 @@ public class ImageSelectorActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * 向相册添加图片
+     *
+     * @param inputUri
+     */
+    private void addPictureToAlbum(Uri inputUri) {
+        //创建ContentValues对象，准备插入数据
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, String.format("JPEG_%s.jpg", timeStamp));
+        contentValues.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+        //插入数据，返回所插入数据对应的Uri
+        Uri outUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
+        if (outUri != null) {
+            try {
+                ParcelFileDescriptor parcelFdInput = getContentResolver().openFileDescriptor(inputUri, "r");
+                ParcelFileDescriptor parcelFdOutput = getContentResolver().openFileDescriptor(outUri, "w");
+                InputStream inputStream = new ParcelFileDescriptor.AutoCloseInputStream(parcelFdInput);
+                OutputStream outputStream = new ParcelFileDescriptor.AutoCloseOutputStream(parcelFdOutput);
+                byte[] bytes = new byte[1024];
+                while ((inputStream.read(bytes)) != -1) {
+                    outputStream.write(bytes);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -527,6 +601,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
         } else if (requestCode == ImageSelector.CAMERA_REQUEST_CODE) {
             if (resultCode == RESULT_OK) {
                 ArrayList<Uri> imageContentUris = new ArrayList<>();
+                addPictureToAlbum(mCameraUri);
                 imageContentUris.add(mCameraUri);
                 saveImageAndFinish(imageContentUris, true);
             } else {

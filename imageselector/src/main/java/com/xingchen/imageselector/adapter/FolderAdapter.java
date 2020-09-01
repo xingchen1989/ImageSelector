@@ -12,15 +12,15 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.xingchen.imageselector.R;
-import com.xingchen.imageselector.entry.Image;
 import com.xingchen.imageselector.entry.ImageFolder;
 
 import java.util.ArrayList;
 
 public class FolderAdapter extends RecyclerView.Adapter<FolderAdapter.ViewHolder> {
+    private int mSelectItem;
     private Context mContext;
-    private ArrayList<ImageFolder> mFolders = new ArrayList<>();
     private OnFolderSelectListener mOnFolderSelectListener;
+    private ArrayList<ImageFolder> mFolders = new ArrayList<>();
 
     public FolderAdapter(Context mContext) {
         this.mContext = mContext;
@@ -34,14 +34,24 @@ public class FolderAdapter extends RecyclerView.Adapter<FolderAdapter.ViewHolder
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        ImageFolder folder = mFolders.get(position);
-        ArrayList<Image> images = folder.getImageList();
+    public void onBindViewHolder(@NonNull final ViewHolder holder, int position) {
+        final ImageFolder folder = mFolders.get(position);
         holder.tvFolderName.setText(folder.getFolderName());
-        holder.tvFolderSize.setText(mContext.getString(R.string.selector_image_num, images.size()));
-        if (!images.isEmpty()) {
-            Glide.with(mContext).load(images.get(0).getContentUri()).into(holder.ivImage);
+        holder.tvFolderSize.setText(mContext.getString(R.string.selector_image_num, folder.getImageList().size()));
+        holder.ivSelect.setVisibility(mSelectItem == position ? View.VISIBLE : View.GONE);
+        if (!folder.getImageList().isEmpty()) {
+            Glide.with(mContext).load(folder.getImageList().get(0).getContentUri()).into(holder.ivImage);
         }
+        holder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mSelectItem = holder.getAdapterPosition();
+                notifyDataSetChanged();
+                if (mOnFolderSelectListener != null) {
+                    mOnFolderSelectListener.OnFolderSelect(folder);
+                }
+            }
+        });
     }
 
     @Override

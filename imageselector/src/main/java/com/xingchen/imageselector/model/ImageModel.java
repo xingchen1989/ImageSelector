@@ -1,11 +1,16 @@
 package com.xingchen.imageselector.model;
 
+import android.Manifest;
 import android.content.ContentUris;
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.text.TextUtils;
+
+import androidx.core.content.ContextCompat;
 
 import com.xingchen.imageselector.R;
 import com.xingchen.imageselector.entry.Image;
@@ -16,14 +21,56 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ImageModel {
-    public static void loadImage(final Context context, final DataCallback callback) {
+    private static ImageModel mInstance;
+    private static ArrayList<ImageFolder> cacheImageList = null;
+
+    private PhotoContentObserver observer;
+
+    public interface DataCallback {
+        void onSuccess(ArrayList<ImageFolder> imageFolders);
+    }
+
+    public static ImageModel getInstance() {
+        if (mInstance == null) {
+            synchronized (ImageModel.class) {
+                if (mInstance == null) {
+                    mInstance = new ImageModel();
+                }
+            }
+        }
+        return mInstance;
+    }
+
+    /**
+     * 预加载图片
+     *
+     * @param context
+     */
+    public void preloadAndRegisterContentObserver(Context context) {
+        if (observer == null) {
+            observer = new PhotoContentObserver(context);
+            context.getContentResolver().registerContentObserver(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, false, observer);
+        }
+        preloadImage(context);
+    }
+
+    /**
+     * 异步加载图片
+     *
+     * @param context
+     * @param isPreLoad
+     * @param callback
+     */
+    public void loadImage(final Context context, final boolean isPreLoad, final DataCallback callback) {
         new Thread(new Runnable() {
             @Override
             public void run() {
                 synchronized (ImageModel.class) {
-                    ArrayList<Image> imageList = scanImages(context);
+                    if (cacheImageList == null || isPreLoad) {
+                        cacheImageList = splitFolder(context, scanImages(context));
+                    }
                     if (callback != null) {
-                        callback.onSuccess(splitFolder(context, imageList));
+                        callback.onSuccess(cacheImageList);
                     }
                 }
             }
@@ -31,11 +78,38 @@ public class ImageModel {
     }
 
     /**
+     * 清空缓存
+     */
+    private void clearCache() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if (cacheImageList != null) {
+                    cacheImageList.clear();
+                    cacheImageList = null;
+                }
+            }
+        }).start();
+    }
+
+    /**
+     * 预加载图片
+     *
+     * @param context
+     */
+    private void preloadImage(Context context) {
+        int hasReadExternalPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE);
+        if (hasReadExternalPermission == PackageManager.PERMISSION_GRANTED) {
+            loadImage(context, true, null);
+        }
+    }
+
+    /**
      * 扫描图片
      *
      * @return
      */
-    private static ArrayList<Image> scanImages(Context context) {
+    private ArrayList<Image> scanImages(Context context) {
         ArrayList<Image> images = new ArrayList<>();
         Cursor mCursor = context.getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, new String[]{
                         MediaStore.Images.Media._ID,
@@ -74,7 +148,7 @@ public class ImageModel {
      * @param path
      * @return
      */
-    private static String getFolderName(String path) {
+    private String getFolderName(String path) {
         if (!TextUtils.isEmpty(path)) {
             String[] strings = path.split(File.separator);
             if (strings.length >= 2) {
@@ -91,7 +165,7 @@ public class ImageModel {
      * @param folders
      * @return
      */
-    private static ImageFolder getFolder(Image image, List<ImageFolder> folders) {
+    private ImageFolder getFolder(Image image, List<ImageFolder> folders) {
         String name = getFolderName(image.getPath());
         for (ImageFolder folder : folders) {
             if (name.equals(folder.getFolderName())) {
@@ -109,7 +183,7 @@ public class ImageModel {
      * @param images
      * @return
      */
-    private static ArrayList<ImageFolder> splitFolder(Context context, ArrayList<Image> images) {
+    private ArrayList<ImageFolder> splitFolder(Context context, ArrayList<Image> images) {
         ArrayList<ImageFolder> folders = new ArrayList<>();
         folders.add(new ImageFolder(context.getString(R.string.selector_all_image), images));
         for (Image image : images) {
@@ -119,7 +193,19 @@ public class ImageModel {
         return folders;
     }
 
-    public interface DataCallback {
-        void onSuccess(ArrayList<ImageFolder> imageFolders);
+    private class PhotoContentObserver extends ContentObserver {
+        private Context context;
+
+        PhotoContentObserver(Context appContext) {
+            super(null);
+            context = appContext;
+        }
+
+        @Override
+        public void onChange(boolean selfChange, Uri uri) {
+            super.onChange(selfChange, uri);
+            clearCache();
+            preloadImage(context);
+        }
     }
 }

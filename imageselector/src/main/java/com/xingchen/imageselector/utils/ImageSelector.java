@@ -1,11 +1,13 @@
 package com.xingchen.imageselector.utils;
 
 import android.app.Activity;
+import android.content.Context;
 
 import androidx.fragment.app.Fragment;
 
 import com.xingchen.imageselector.activity.ImageSelectorActivity;
 import com.xingchen.imageselector.entry.RequestConfig;
+import com.xingchen.imageselector.model.ImageModel;
 
 import java.util.ArrayList;
 
@@ -51,6 +53,15 @@ public class ImageSelector {
     public static final int SELECTOR_RESULT_CODE = 0x00000010;
 
     public static final int CAMERA_REQUEST_CODE = 0x00000011;
+
+    /**
+     * 预加载图片
+     *
+     * @param context
+     */
+    public static void preload(Context context) {
+        ImageModel.getInstance().preloadAndRegisterContentObserver(context);
+    }
 
     public static ImageSelectorBuilder builder() {
         return new ImageSelectorBuilder();
