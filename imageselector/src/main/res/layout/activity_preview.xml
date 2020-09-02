@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     tools:context=".activity.PreviewActivity">
 
-    <com.xingchen.imageselector.view.FixExceptionViewPager
+    <com.xingchen.imageselector.adapter.FixExceptionViewPager
         android:id="@+id/vp_image"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />

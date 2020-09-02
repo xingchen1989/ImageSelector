@@ -19,7 +19,7 @@ import com.xingchen.imageselector.entry.Image;
 import com.xingchen.imageselector.entry.RequestConfig;
 import com.xingchen.imageselector.utils.ImageSelector;
 import com.xingchen.imageselector.utils.VersionUtils;
-import com.xingchen.imageselector.view.FixExceptionViewPager;
+import com.xingchen.imageselector.adapter.FixExceptionViewPager;
 
 import java.util.ArrayList;
 

@@ -1,4 +1,4 @@
-package com.xingchen.imageselector.view;
+package com.xingchen.imageselector.adapter;
 
 import android.content.Context;
 import android.util.AttributeSet;
