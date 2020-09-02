@@ -1,4 +1,6 @@
 apply plugin: 'com.android.library'
+apply plugin: 'com.github.dcendents.android-maven'//启用android-maven-gradle-plugin
+group = 'com.github.xingchen1989'//com.github.<用户名>（也就是你GitHub上的地址）
 
 android {
     compileSdkVersion 29
