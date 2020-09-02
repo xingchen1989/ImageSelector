@@ -611,4 +611,18 @@ public class ImageSelectorActivity extends AppCompatActivity {
             }
         }
     }
+
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        GridLayoutManager layoutManager = (GridLayoutManager) rvImage.getLayoutManager();
+        if (layoutManager != null && mImageAdapter != null) {
+            if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
+                layoutManager.setSpanCount(3);
+            } else if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                layoutManager.setSpanCount(5);
+            }
+            mImageAdapter.notifyDataSetChanged();
+        }
+    }
 }

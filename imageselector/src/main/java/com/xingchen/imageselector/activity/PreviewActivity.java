@@ -19,11 +19,12 @@ import com.xingchen.imageselector.entry.Image;
 import com.xingchen.imageselector.entry.RequestConfig;
 import com.xingchen.imageselector.utils.ImageSelector;
 import com.xingchen.imageselector.utils.VersionUtils;
+import com.xingchen.imageselector.view.FixExceptionViewPager;
 
 import java.util.ArrayList;
 
 public class PreviewActivity extends AppCompatActivity {
-    private ViewPager viewPager;
+    private FixExceptionViewPager viewPager;
     private TextView tvIndicator;
     private TextView tvConfirm;
     private TextView tvSelect;
