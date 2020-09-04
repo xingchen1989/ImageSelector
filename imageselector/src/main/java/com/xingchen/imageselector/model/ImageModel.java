@@ -48,8 +48,10 @@ public class ImageModel {
      */
     public void preloadAndRegisterContentObserver(Context context) {
         if (observer == null) {
-            observer = new PhotoContentObserver(context);
-            context.getContentResolver().registerContentObserver(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, false, observer);
+            observer = new PhotoContentObserver(context.getApplicationContext());
+            context.getApplicationContext()
+                    .getContentResolver()
+                    .registerContentObserver(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, false, observer);
         }
         preloadImage(context);
     }

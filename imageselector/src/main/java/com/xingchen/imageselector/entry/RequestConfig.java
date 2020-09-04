@@ -17,8 +17,7 @@ public class RequestConfig implements Parcelable {
     public boolean canPreview = true; // 是否可以点击图片预览
     public boolean enableCamera = true;  // 是否支持拍照
     public boolean onlyTakePhoto = false; // 仅拍照，不打开相册。true时，useCamera也必定为true。
-    public int maxSelectCount; //图片的最大选择数量，小于等于0时，不限数量，isSingle为false时才有用。
-    public int requestCode;//请求码
+    public int maxSelectCount = 0; //图片的最大选择数量，小于等于0时，不限数量，isSingle为false时才有用。
     public float cropRatio = 1.0f; // 图片剪切的宽高比，宽固定为手机屏幕的宽。
     public ArrayList<String> selected; //接收从外面传进来的已选择的图片列表。当用户原来已经有选择过图片，重新打开选择器，允许用户把先前选过的图片传进来，并把这些图片默认为选中状态。
 
@@ -38,7 +37,6 @@ public class RequestConfig implements Parcelable {
         dest.writeByte(this.enableCamera ? (byte) 1 : (byte) 0);
         dest.writeByte(this.onlyTakePhoto ? (byte) 1 : (byte) 0);
         dest.writeInt(this.maxSelectCount);
-        dest.writeInt(this.requestCode);
         dest.writeFloat(this.cropRatio);
         dest.writeStringList(this.selected);
     }
@@ -50,7 +48,6 @@ public class RequestConfig implements Parcelable {
         this.enableCamera = in.readByte() != 0;
         this.onlyTakePhoto = in.readByte() != 0;
         this.maxSelectCount = in.readInt();
-        this.requestCode = in.readInt();
         this.cropRatio = in.readFloat();
         this.selected = in.createStringArrayList();
     }

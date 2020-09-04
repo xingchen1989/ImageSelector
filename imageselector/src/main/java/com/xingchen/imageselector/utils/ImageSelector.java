@@ -5,6 +5,7 @@ import android.content.Context;
 
 import androidx.fragment.app.Fragment;
 
+import com.xingchen.imageselector.activity.ClipImageActivity;
 import com.xingchen.imageselector.activity.ImageSelectorActivity;
 import com.xingchen.imageselector.entry.RequestConfig;
 import com.xingchen.imageselector.model.ImageModel;
@@ -171,13 +172,12 @@ public class ImageSelector {
          * @param requestCode
          */
         public void start(Activity activity, int requestCode) {
-            config.requestCode = requestCode;
             // 仅拍照，useCamera必须为true
             if (config.onlyTakePhoto) {
                 config.enableCamera = true;
             }
             if (config.isCrop) {
-//                ClipImageActivity.openActivity(activity, requestCode, config);
+                ClipImageActivity.openActivity(activity, requestCode, config);
             } else {
                 ImageSelectorActivity.openActivity(activity, requestCode, config);
             }
@@ -190,13 +190,12 @@ public class ImageSelector {
          * @param requestCode
          */
         public void start(Fragment fragment, int requestCode) {
-            config.requestCode = requestCode;
             // 仅拍照，useCamera必须为true
             if (config.onlyTakePhoto) {
                 config.enableCamera = true;
             }
             if (config.isCrop) {
-//                ClipImageActivity.openActivity(fragment, requestCode, config);
+                ClipImageActivity.openActivity(fragment, requestCode, config);
             } else {
                 ImageSelectorActivity.openActivity(fragment, requestCode, config);
             }

@@ -60,6 +60,7 @@ import java.util.Date;
 import java.util.Locale;
 
 public class ImageSelectorActivity extends AppCompatActivity {
+
     private static final int PERMISSION_READ_EXTERNAL_REQUEST_CODE = 0x00000011;
     private static final int PERMISSION_CAMERA_REQUEST_CODE = 0x00000012;
 
@@ -94,7 +95,6 @@ public class ImageSelectorActivity extends AppCompatActivity {
      * 启动图片选择器
      *
      * @param activity
-     * @param requestCode
      * @param config
      */
     public static void openActivity(Activity activity, int requestCode, RequestConfig config) {
@@ -107,7 +107,6 @@ public class ImageSelectorActivity extends AppCompatActivity {
      * 启动图片选择器
      *
      * @param fragment
-     * @param requestCode
      * @param config
      */
     public static void openActivity(Fragment fragment, int requestCode, RequestConfig config) {
