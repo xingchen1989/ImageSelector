@@ -41,7 +41,7 @@ public class ClipImageActivity extends AppCompatActivity {
         initData();//初始化数据
         initView();//初始化视图
         initListener();//初始化监听器
-        ImageSelectorActivity.openActivity(this, ImageSelector.SELECTOR_RESULT_CODE, config);//启动图片选择器
+        ImageSelectorActivity.openActivity(this, ImageSelector.SELECTOR_REQUEST_CODE, config);//启动图片选择器
     }
 
     /**
@@ -156,11 +156,15 @@ public class ClipImageActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == ImageSelector.SELECTOR_RESULT_CODE && data != null) {
-            isCameraImage = data.getBooleanExtra(ImageSelector.IS_CAMERA_IMAGE, false);
-            ArrayList<Uri> imageContentUris = data.getParcelableArrayListExtra(ImageSelector.SELECT_RESULT);
-            if (imageContentUris != null && imageContentUris.size() > 0) {
-                cropImageView.setImageURI(imageContentUris.get(0));
+        if (requestCode == ImageSelector.SELECTOR_REQUEST_CODE) {
+            if (resultCode == RESULT_OK && data != null) {
+                isCameraImage = data.getBooleanExtra(ImageSelector.IS_CAMERA_IMAGE, false);
+                ArrayList<Uri> imageContentUris = data.getParcelableArrayListExtra(ImageSelector.SELECT_RESULT);
+                if (imageContentUris != null && imageContentUris.size() > 0) {
+                    cropImageView.setImageURI(imageContentUris.get(0));
+                }
+            } else {
+                finish();
             }
         }
     }

@@ -49,9 +49,7 @@ public class ImageSelector {
      */
     public static final String KEY_CONFIG = "key_config";
 
-    public static final String IS_CONFIRM = "is_confirm";
-
-    public static final int SELECTOR_RESULT_CODE = 0x00000010;
+    public static final int SELECTOR_REQUEST_CODE = 0x00000010;
 
     public static final int CAMERA_REQUEST_CODE = 0x00000011;
 

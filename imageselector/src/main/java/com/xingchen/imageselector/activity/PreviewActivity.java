@@ -14,12 +14,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.viewpager.widget.ViewPager;
 
 import com.xingchen.imageselector.R;
+import com.xingchen.imageselector.adapter.FixExceptionViewPager;
 import com.xingchen.imageselector.adapter.ImagePagerAdapter;
 import com.xingchen.imageselector.entry.Image;
 import com.xingchen.imageselector.entry.RequestConfig;
 import com.xingchen.imageselector.utils.ImageSelector;
 import com.xingchen.imageselector.utils.VersionUtils;
-import com.xingchen.imageselector.adapter.FixExceptionViewPager;
 
 import java.util.ArrayList;
 
@@ -136,8 +136,7 @@ public class PreviewActivity extends AppCompatActivity {
             public void onClick(View v) {
                 //Activity关闭时，通过Intent把用户的操作(确定/返回)传给ImageSelectActivity。
                 Intent intent = new Intent();
-                intent.putExtra(ImageSelector.IS_CONFIRM, true);
-                setResult(ImageSelector.SELECTOR_RESULT_CODE, intent);
+                setResult(RESULT_OK, intent);
                 finish();
             }
         });
@@ -145,7 +144,8 @@ public class PreviewActivity extends AppCompatActivity {
 
     private void changeSelect(int position) {
         Drawable drawable = mSelectImages.contains(mTotalImages.get(position)) ?
-                getResources().getDrawable(R.drawable.icon_image_select) : getResources().getDrawable(R.drawable.icon_image_un_select);
+                getResources().getDrawable(R.drawable.icon_image_select) :
+                getResources().getDrawable(R.drawable.icon_image_un_select);
         tvSelect.setCompoundDrawablesWithIntrinsicBounds(drawable, null, null, null);
         tvIndicator.setText(String.format("%1$s/%2$s", position + 1, mTotalImages.size()));
         if (mSelectImages.size() == 0) {

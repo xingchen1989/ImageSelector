@@ -183,7 +183,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 ArrayList<Image> totalImages = new ArrayList<>(mImageAdapter.getSelectImages());
-                PreviewActivity.openActivity(ImageSelectorActivity.this, ImageSelector.SELECTOR_RESULT_CODE,
+                PreviewActivity.openActivity(ImageSelectorActivity.this, ImageSelector.SELECTOR_REQUEST_CODE,
                         0, config, mImageAdapter.getSelectImages(), totalImages);
             }
         });
@@ -248,7 +248,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
         mImageAdapter.setItemClickListener(new ImageAdapter.OnItemClickListener() {
             @Override
             public void OnItemClick(Image image, int position) {
-                PreviewActivity.openActivity(ImageSelectorActivity.this, ImageSelector.SELECTOR_RESULT_CODE,
+                PreviewActivity.openActivity(ImageSelectorActivity.this, ImageSelector.SELECTOR_REQUEST_CODE,
                         position, config, mImageAdapter.getSelectImages(), mImageAdapter.getTotalImages());
             }
 
@@ -588,8 +588,8 @@ public class ImageSelectorActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == ImageSelector.SELECTOR_RESULT_CODE) {
-            if (data != null && data.getBooleanExtra(ImageSelector.IS_CONFIRM, false)) {
+        if (requestCode == ImageSelector.SELECTOR_REQUEST_CODE) {
+            if (resultCode == RESULT_OK) {
                 //如果用户在预览页点击了确定，就直接把用户选中的图片返回给用户。
                 confirmSelect();
             } else {
