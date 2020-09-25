@@ -513,6 +513,9 @@ public class ImageSelectorActivity extends AppCompatActivity {
         }).show();
     }
 
+    /**
+     * 检查相机权限并打开相机
+     */
     private void checkPermissionAndCamera() {
         int hasCameraPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
         if (hasCameraPermission == PackageManager.PERMISSION_GRANTED) {
@@ -520,8 +523,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
             mCameraUri = openCamera();
         } else {
             //没有权限，申请权限。
-            ActivityCompat.requestPermissions(ImageSelectorActivity.this,
-                    new String[]{Manifest.permission.CAMERA}, PERMISSION_CAMERA_REQUEST_CODE);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, PERMISSION_CAMERA_REQUEST_CODE);
         }
     }
 
@@ -533,8 +535,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
         if (hasReadExternalPermission == PackageManager.PERMISSION_GRANTED) {//有权限，加载图片。
             loadImageAndUpdateView();
         } else {//没有权限，申请权限。
-            ActivityCompat.requestPermissions(ImageSelectorActivity.this,
-                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_READ_EXTERNAL_REQUEST_CODE);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_READ_EXTERNAL_REQUEST_CODE);
         }
     }
 
@@ -547,8 +548,8 @@ public class ImageSelectorActivity extends AppCompatActivity {
         //创建ContentValues对象，准备插入数据
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
         ContentValues contentValues = new ContentValues();
-        contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, String.format("JPEG_%s.jpg", timeStamp));
         contentValues.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+        contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, String.format("JPEG_%s.jpg", timeStamp));
         //插入数据，返回所插入数据对应的Uri
         Uri outUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
         if (outUri != null) {
