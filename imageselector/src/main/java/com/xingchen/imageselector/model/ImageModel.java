@@ -137,11 +137,26 @@ public class ImageModel {
                 //获取图片uri
                 Uri uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
 //                Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI.buildUpon().appendPath(String.valueOf(id)).build();
-                images.add(new Image(time, mimeType, name, path, uri));
+                if (checkImageValid(path)) {
+                    images.add(new Image(time, mimeType, name, path, uri));
+                }
             }
             mCursor.close();
         }
         return images;
+    }
+
+    /**
+     * 检查图片是否有效
+     *
+     * @param path
+     * @return
+     */
+    private boolean checkImageValid(String path) {
+        if (!TextUtils.isEmpty(path)) {
+            return new File(path).exists();
+        }
+        return false;
     }
 
     /**
