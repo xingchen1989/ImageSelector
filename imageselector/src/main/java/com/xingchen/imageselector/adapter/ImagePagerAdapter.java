@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 import androidx.viewpager.widget.PagerAdapter;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.github.chrisbanes.photoview.PhotoView;
 import com.xingchen.imageselector.entry.Image;
 
@@ -39,7 +40,9 @@ public class ImagePagerAdapter extends PagerAdapter {
         currentView.setAdjustViewBounds(true);
         Glide.with(mContext)
                 .load(mImageList.get(position).getContentUri())
-                .override(720, 1080)
+                .override(1080, 1920)
+                .thumbnail(0.1f)
+                .transition(DrawableTransitionOptions.withCrossFade())
                 .into(currentView);
         container.addView(currentView);
         return currentView;
