@@ -40,7 +40,7 @@ public class ImagePagerAdapter extends PagerAdapter {
         Glide.with(mContext)
                 .load(mImageList.get(position).getContentUri())
                 .thumbnail(0.1f)
-//                .override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL)
+                .override(2048, 2048)
                 .transition(DrawableTransitionOptions.withCrossFade())
                 .into(currentView);
         container.addView(currentView);
