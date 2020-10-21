@@ -37,11 +37,10 @@ public class ImagePagerAdapter extends PagerAdapter {
     @Override
     public Object instantiateItem(@NonNull ViewGroup container, int position) {
         PhotoView currentView = new PhotoView(mContext);
-        currentView.setAdjustViewBounds(true);
         Glide.with(mContext)
                 .load(mImageList.get(position).getContentUri())
-                .override(1080, 1920)
                 .thumbnail(0.1f)
+//                .override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL)
                 .transition(DrawableTransitionOptions.withCrossFade())
                 .into(currentView);
         container.addView(currentView);
