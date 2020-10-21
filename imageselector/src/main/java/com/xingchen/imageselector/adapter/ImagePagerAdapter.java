@@ -9,9 +9,11 @@ import androidx.annotation.NonNull;
 import androidx.viewpager.widget.PagerAdapter;
 
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
+import com.bumptech.glide.load.resource.bitmap.BitmapTransitionOptions;
+import com.bumptech.glide.request.target.Target;
 import com.github.chrisbanes.photoview.PhotoView;
 import com.xingchen.imageselector.entry.Image;
+import com.xingchen.imageselector.utils.ResolutionLimitedTarget;
 
 import java.util.List;
 
@@ -41,21 +43,18 @@ public class ImagePagerAdapter extends PagerAdapter {
         currentView.setMaximumScale(10.0f);
         Uri uri = mImageList.get(position).getContentUri();
         Glide.with(mContext)
+                .asBitmap()
                 .load(uri)
                 .thumbnail(0.1f)
-                .override(2048, 2048)
-                .transition(DrawableTransitionOptions.withCrossFade())
-                .into(currentView);
+                .override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL)
+                .transition(BitmapTransitionOptions.withCrossFade())
+                .into(new ResolutionLimitedTarget(currentView));
         container.addView(currentView);
         return currentView;
     }
 
     @Override
     public void destroyItem(@NonNull ViewGroup container, int position, @NonNull Object object) {
-        if (object instanceof PhotoView) {
-            PhotoView view = (PhotoView) object;
-            view.setImageDrawable(null);
-            container.removeView(view);
-        }
+        container.removeView((View) object);
     }
 }

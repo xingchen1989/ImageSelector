@@ -155,10 +155,10 @@ public class PreviewActivity extends AppCompatActivity {
             btnConfirm.setEnabled(true);
             if (config.isSingle) {
                 tvConfirm.setText(R.string.selector_send);
-            } else if (config.maxSelectCount > 0) {
-                tvConfirm.setText(String.format(getString(R.string.selector_send) + "(%1$s/%2$s)", mSelectImages.size(), config.maxSelectCount));
-            } else {
+            } else if (config.maxSelectCount <= 0) {
                 tvConfirm.setText(String.format(getString(R.string.selector_send) + "(%1$s)", mSelectImages.size()));
+            } else {
+                tvConfirm.setText(String.format(getString(R.string.selector_send) + "(%1$s/%2$s)", mSelectImages.size(), config.maxSelectCount));
             }
         }
     }
