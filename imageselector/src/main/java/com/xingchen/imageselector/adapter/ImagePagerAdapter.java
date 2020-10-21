@@ -1,6 +1,7 @@
 package com.xingchen.imageselector.adapter;
 
 import android.content.Context;
+import android.net.Uri;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -37,8 +38,10 @@ public class ImagePagerAdapter extends PagerAdapter {
     @Override
     public Object instantiateItem(@NonNull ViewGroup container, int position) {
         PhotoView currentView = new PhotoView(mContext);
+        currentView.setMaximumScale(10.0f);
+        Uri uri = mImageList.get(position).getContentUri();
         Glide.with(mContext)
-                .load(mImageList.get(position).getContentUri())
+                .load(uri)
                 .thumbnail(0.1f)
                 .override(2048, 2048)
                 .transition(DrawableTransitionOptions.withCrossFade())
