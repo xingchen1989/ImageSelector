@@ -1,19 +1,24 @@
 package com.xingchen.imageselector.adapter;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Matrix;
 import android.net.Uri;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.viewpager.widget.PagerAdapter;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.BitmapTransitionOptions;
+import com.bumptech.glide.request.target.BitmapImageViewTarget;
 import com.bumptech.glide.request.target.Target;
+import com.bumptech.glide.request.transition.Transition;
 import com.github.chrisbanes.photoview.PhotoView;
 import com.xingchen.imageselector.entry.Image;
-import com.xingchen.imageselector.utils.ResolutionLimitedTarget;
 
 import java.util.List;
 
@@ -56,5 +61,48 @@ public class ImagePagerAdapter extends PagerAdapter {
     @Override
     public void destroyItem(@NonNull ViewGroup container, int position, @NonNull Object object) {
         container.removeView((View) object);
+    }
+
+    /**
+     * 限制图片分辨率，避免图片过大时，Glide自动压缩后图片不清晰
+     */
+    private static class ResolutionLimitedTarget extends BitmapImageViewTarget {
+        /**
+         * 默认分辨率阈值
+         */
+        private static final float DEFAULT_RESOLUTION = 1920f;
+
+        /**
+         * 分辨率阈值
+         */
+        private float resolution = DEFAULT_RESOLUTION;
+
+        ResolutionLimitedTarget(ImageView view) {
+            super(view);
+        }
+
+        @Override
+        public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+            super.onResourceReady(resizeBitmap(resource), transition);
+        }
+
+        /**
+         * 重新调整Bitmap大小
+         *
+         * @param resource
+         * @return
+         */
+        private Bitmap resizeBitmap(Bitmap resource) {
+            int srcWidth = resource.getWidth();
+            int srcHeight = resource.getHeight();
+
+            if (srcWidth > DEFAULT_RESOLUTION && srcHeight > DEFAULT_RESOLUTION) {
+                float scale = DEFAULT_RESOLUTION / Math.max(srcWidth, srcHeight);
+                Matrix matrix = new Matrix();
+                matrix.postScale(scale, scale);
+                return Bitmap.createBitmap(resource, 0, 0, srcWidth, srcHeight, matrix, true);
+            }
+            return Bitmap.createBitmap(resource, 0, 0, srcWidth, srcHeight);
+        }
     }
 }
