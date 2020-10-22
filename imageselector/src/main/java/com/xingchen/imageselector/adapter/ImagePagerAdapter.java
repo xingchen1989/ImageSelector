@@ -96,8 +96,8 @@ public class ImagePagerAdapter extends PagerAdapter {
             int srcWidth = resource.getWidth();
             int srcHeight = resource.getHeight();
 
-            if (srcWidth > DEFAULT_RESOLUTION && srcHeight > DEFAULT_RESOLUTION) {
-                float scale = DEFAULT_RESOLUTION / Math.max(srcWidth, srcHeight);
+            if (srcWidth > resolution && srcHeight > resolution) {
+                float scale = resolution / Math.max(srcWidth, srcHeight);
                 Matrix matrix = new Matrix();
                 matrix.postScale(scale, scale);
                 return Bitmap.createBitmap(resource, 0, 0, srcWidth, srcHeight, matrix, true);
