@@ -17,7 +17,12 @@ public class ResolutionLimitedTarget extends BitmapImageViewTarget {
     /**
      * 默认分辨率阈值
      */
-    public static final float DEFAULT_RESOLUTION = 2560f;
+    private static final float DEFAULT_RESOLUTION = 1920f;
+
+    /**
+     * 分辨率阈值
+     */
+    private float resolution = DEFAULT_RESOLUTION;
 
     public ResolutionLimitedTarget(ImageView view) {
         super(view);
@@ -26,6 +31,15 @@ public class ResolutionLimitedTarget extends BitmapImageViewTarget {
     @Override
     public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
         super.onResourceReady(resizeBitmap(resource), transition);
+    }
+
+    /**
+     * 设置分辨率阈值
+     *
+     * @param resolution
+     */
+    public void setResolution(float resolution) {
+        this.resolution = resolution;
     }
 
     /**

@@ -31,9 +31,9 @@ public class PreviewActivity extends AppCompatActivity {
     private FrameLayout btnConfirm;
 
     private int position;//初始位置
+    private RequestConfig config;//图片浏览器的配置信息
     private static ArrayList<Image> mSelectImages;//当前已经选中的图片
     private static ArrayList<Image> mTotalImages;//当前所有可显示的图片
-    private RequestConfig config;//图片浏览器的配置信息
 
     public static void openActivity(Activity activity, int requestCode, int position, RequestConfig config, ArrayList<Image> selectImages, ArrayList<Image> totalImages) {
         mSelectImages = selectImages;
