@@ -61,8 +61,8 @@ import java.util.Locale;
 
 public class ImageSelectorActivity extends AppCompatActivity {
 
-    private static final int PERMISSION_READ_EXTERNAL_REQUEST_CODE = 0x00000011;
-    private static final int PERMISSION_CAMERA_REQUEST_CODE = 0x00000012;
+    private static final int READ_EXTERNAL_REQUEST_CODE = 0x00000011;
+    private static final int CAMERA_REQUEST_CODE = 0x00000012;
 
     private View viewMask;
     private TextView tvTime;
@@ -80,16 +80,9 @@ public class ImageSelectorActivity extends AppCompatActivity {
 
     private boolean isFolderOpen;
     private Uri mCameraUri;
+    private Handler mHandler;
+    private Runnable mRunnable;
     private RequestConfig config;
-    private Handler mHideHandler = new Handler();
-    private Runnable mHide = new Runnable() {
-        @Override
-        public void run() {
-            if (tvTime.getAlpha() == 1) {
-                ObjectAnimator.ofFloat(tvTime, "alpha", 1, 0).setDuration(300).start();
-            }
-        }
-    };
 
     /**
      * 启动图片选择器
@@ -126,18 +119,27 @@ public class ImageSelectorActivity extends AppCompatActivity {
         initImageList();//初始化图片列表
         initFolderList();//初始化文件夹列表
         setSelectImageCount(0);
-        if (config != null && config.onlyTakePhoto) {
-            checkPermissionAndCamera();
-        } else {
-            checkPermissionAndLoadImages();
-        }
     }
 
     /**
      * 初始化数据
      */
     private void initData() {
+        mHandler = new Handler();
+        mRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (tvTime.getAlpha() == 1) {
+                    ObjectAnimator.ofFloat(tvTime, "alpha", 1, 0).setDuration(300).start();
+                }
+            }
+        };
         config = getIntent().getParcelableExtra(ImageSelector.KEY_CONFIG);
+        if (config.onlyTakePhoto) {
+            checkPermissionAndCamera();
+        } else {
+            checkPermissionAndLoadImages();
+        }
     }
 
     /**
@@ -204,7 +206,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
                 switch (newState) {
                     case AbsListView.OnScrollListener.SCROLL_STATE_TOUCH_SCROLL:
                         // 手指触屏拉动准备滚动，只触发一次        顺序: 1
-                        mHideHandler.removeCallbacks(mHide);
+                        mHandler.removeCallbacks(mRunnable);
                         ObjectAnimator.ofFloat(tvTime, "alpha", 0, 1).setDuration(300).start();
                         break;
                     case AbsListView.OnScrollListener.SCROLL_STATE_FLING:
@@ -212,7 +214,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
                         break;
                     case AbsListView.OnScrollListener.SCROLL_STATE_IDLE:
                         // 整个滚动事件结束，只触发一次            顺序: 4
-                        mHideHandler.postDelayed(mHide, 1500);
+                        mHandler.postDelayed(mRunnable, 1500);
                         break;
                     default:
                         break;
@@ -298,7 +300,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
             tvFolderName.setText(folder.getFolderName());
             mImageAdapter.refresh(folder.getImageList());
             if (tvTime.getAlpha() == 0) {
-                mHideHandler.postDelayed(mHide, 1500);
+                mHandler.postDelayed(mRunnable, 1500);
                 ObjectAnimator.ofFloat(tvTime, "alpha", 0, 1).setDuration(300).start();
             }
         }
@@ -380,7 +382,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
         for (Image image : mImageAdapter.getSelectImages()) {
             imageContentUris.add(image.getContentUri());
         }
-        saveImageAndFinish(imageContentUris, false);
+        saveImageUris(imageContentUris, false);
     }
 
     /**
@@ -389,7 +391,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
      * @param imageContentUris
      * @param isCameraImage
      */
-    private void saveImageAndFinish(ArrayList<Uri> imageContentUris, boolean isCameraImage) {
+    private void saveImageUris(ArrayList<Uri> imageContentUris, boolean isCameraImage) {
         Intent intent = new Intent();
         intent.putParcelableArrayListExtra(ImageSelector.SELECT_RESULT, imageContentUris);
         intent.putExtra(ImageSelector.IS_CAMERA_IMAGE, isCameraImage);
@@ -400,7 +402,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
     /**
      * 加载图片并且更新视图
      */
-    private void loadImageAndUpdateView() {
+    private void loadLocalImages() {
         ImageModel.getInstance().loadImage(this, false, new ImageModel.DataCallback() {
             @Override
             public void onSuccess(final ArrayList<ImageFolder> imageFolders) {
@@ -490,7 +492,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
     }
 
     /**
-     * 发生没有权限等异常时，显示一个提示dialog.
+     * 发生没有权限等异常时，显示一个提示dialog。
      */
     private void showExceptionDialog() {
         new AlertDialog.Builder(this)
@@ -515,16 +517,13 @@ public class ImageSelectorActivity extends AppCompatActivity {
 
     /**
      * 检查相机权限并打开相机
+     * 由于拍照后需要把图片插入相册人，所以需要同时申请存储权限。
      */
     private void checkPermissionAndCamera() {
-        int hasCameraPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
-        int hasReadPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
-        if (hasCameraPermission == PackageManager.PERMISSION_DENIED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.CAMERA}, PERMISSION_CAMERA_REQUEST_CODE);
-        } else if (hasReadPermission == PackageManager.PERMISSION_DENIED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_READ_EXTERNAL_REQUEST_CODE);
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            String[] permissions = new String[]{Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE};
+            ActivityCompat.requestPermissions(this, permissions, CAMERA_REQUEST_CODE);
         } else {
             mCameraUri = openCamera();// 调起相机拍照。
         }
@@ -534,12 +533,11 @@ public class ImageSelectorActivity extends AppCompatActivity {
      * 检查权限并加载SD卡里的图片。
      */
     private void checkPermissionAndLoadImages() {
-        int hasReadPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
-        if (hasReadPermission == PackageManager.PERMISSION_GRANTED) {
-            loadImageAndUpdateView();// 有权限，加载图片。
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            String[] permissions = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE};
+            ActivityCompat.requestPermissions(this, permissions, READ_EXTERNAL_REQUEST_CODE);
         } else {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_READ_EXTERNAL_REQUEST_CODE);
+            loadLocalImages();// 有权限，加载图片。
         }
     }
 
@@ -575,18 +573,34 @@ public class ImageSelectorActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == PERMISSION_READ_EXTERNAL_REQUEST_CODE) {
+        if (requestCode == READ_EXTERNAL_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                loadImageAndUpdateView();//允许权限，加载图片。
+                loadLocalImages();//允许权限，加载图片。
             } else {
                 showExceptionDialog();//拒绝权限，弹出提示框。
             }
-        } else if (requestCode == PERMISSION_CAMERA_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                mCameraUri = openCamera();//允许权限，有调起相机拍照。
-            } else {
-                showExceptionDialog(); //拒绝权限，弹出提示框。
+        } else if (requestCode == CAMERA_REQUEST_CODE) {
+            for (int grantResult : grantResults) {
+                if (grantResult != PackageManager.PERMISSION_GRANTED) {
+                    showExceptionDialog(); //拒绝权限，弹出提示框。
+                    return;
+                }
             }
+            mCameraUri = openCamera();//允许权限，调起相机拍照。
+        }
+    }
+
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        GridLayoutManager layoutManager = (GridLayoutManager) rvImage.getLayoutManager();
+        if (layoutManager != null && mImageAdapter != null) {
+            if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
+                layoutManager.setSpanCount(3);
+            } else if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                layoutManager.setSpanCount(5);
+            }
+            mImageAdapter.notifyDataSetChanged();
         }
     }
 
@@ -607,26 +621,12 @@ public class ImageSelectorActivity extends AppCompatActivity {
                 ArrayList<Uri> imageContentUris = new ArrayList<>();
                 addPictureToAlbum(mCameraUri);
                 imageContentUris.add(mCameraUri);
-                saveImageAndFinish(imageContentUris, true);
+                saveImageUris(imageContentUris, true);
             } else {
                 if (config.onlyTakePhoto) {
                     finish();
                 }
             }
-        }
-    }
-
-    @Override
-    public void onConfigurationChanged(@NonNull Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        GridLayoutManager layoutManager = (GridLayoutManager) rvImage.getLayoutManager();
-        if (layoutManager != null && mImageAdapter != null) {
-            if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
-                layoutManager.setSpanCount(3);
-            } else if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                layoutManager.setSpanCount(5);
-            }
-            mImageAdapter.notifyDataSetChanged();
         }
     }
 }

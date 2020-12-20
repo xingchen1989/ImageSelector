@@ -35,14 +35,13 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        LayoutInflater mInflater = LayoutInflater.from(mContext);
+        View view;
         if (viewType == TYPE_IMAGE) {
-            View view = mInflater.inflate(R.layout.adapter_images_item, parent, false);
-            return new ViewHolder(view);
+            view = LayoutInflater.from(mContext).inflate(R.layout.adapter_images_item, parent, false);
         } else {
-            View view = mInflater.inflate(R.layout.adapter_camera_item, parent, false);
-            return new ViewHolder(view);
+            view = LayoutInflater.from(mContext).inflate(R.layout.adapter_camera_item, parent, false);
         }
+        return new ViewHolder(view);
     }
 
     @Override
