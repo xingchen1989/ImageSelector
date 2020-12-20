@@ -518,12 +518,15 @@ public class ImageSelectorActivity extends AppCompatActivity {
      */
     private void checkPermissionAndCamera() {
         int hasCameraPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
-        if (hasCameraPermission == PackageManager.PERMISSION_GRANTED) {
-            //有调起相机拍照。
-            mCameraUri = openCamera();
+        int hasReadPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
+        if (hasCameraPermission == PackageManager.PERMISSION_DENIED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.CAMERA}, PERMISSION_CAMERA_REQUEST_CODE);
+        } else if (hasReadPermission == PackageManager.PERMISSION_DENIED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_READ_EXTERNAL_REQUEST_CODE);
         } else {
-            //没有权限，申请权限。
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, PERMISSION_CAMERA_REQUEST_CODE);
+            mCameraUri = openCamera();// 调起相机拍照。
         }
     }
 
@@ -531,11 +534,12 @@ public class ImageSelectorActivity extends AppCompatActivity {
      * 检查权限并加载SD卡里的图片。
      */
     private void checkPermissionAndLoadImages() {
-        int hasReadExternalPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
-        if (hasReadExternalPermission == PackageManager.PERMISSION_GRANTED) {//有权限，加载图片。
-            loadImageAndUpdateView();
-        } else {//没有权限，申请权限。
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_READ_EXTERNAL_REQUEST_CODE);
+        int hasReadPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
+        if (hasReadPermission == PackageManager.PERMISSION_GRANTED) {
+            loadImageAndUpdateView();// 有权限，加载图片。
+        } else {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_READ_EXTERNAL_REQUEST_CODE);
         }
     }
 
