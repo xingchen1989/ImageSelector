@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -35,14 +36,16 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        ViewHolder viewHolder = null;
         LayoutInflater mInflater = LayoutInflater.from(mContext);
         if (viewType == TYPE_IMAGE) {
             View view = mInflater.inflate(R.layout.adapter_images_item, parent, false);
-            return new ViewHolder(view);
-        } else {
+            viewHolder = new ViewHolder(view);
+        } else if (viewType == TYPE_CAMERA) {
             View view = mInflater.inflate(R.layout.adapter_camera_item, parent, false);
-            return new ViewHolder(view);
+            viewHolder = new ViewHolder(view);
         }
+        return viewHolder;
     }
 
     @Override
@@ -64,11 +67,9 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
             holder.itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (config.canPreview) {
-                        if (mItemClickListener != null) {
-                            mItemClickListener.OnItemClick(image, config.enableCamera ?
-                                    holder.getAdapterPosition() - 1 : holder.getAdapterPosition());
-                        }
+                    if (config.canPreview && mItemClickListener != null) {
+                        mItemClickListener.OnItemClick(image, config.enableCamera ?
+                                holder.getAdapterPosition() - 1 : holder.getAdapterPosition());
                     } else {
                         checkedImage(holder, image);
                     }
@@ -173,10 +174,12 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
             selectImage(image);
             setItemSelectState(holder, true);
         } else if (config.maxSelectCount <= 0 || mSelectImages.size() < config.maxSelectCount) {
-            //如果不限制图片的选中数量，或者图片的选中数量
-            // 还没有达到最大限制，就直接选中当前图片。
+            //如果不限制图片的选中数量，或者图片的选中数量还没有达到最大限制，就直接选中当前图片。
             selectImage(image);
             setItemSelectState(holder, true);
+        } else {
+            //图片选择数量达到最大张数时提示用户
+            Toast.makeText(mContext, String.format("您最多只能选择%1$s张照片", config.maxSelectCount), Toast.LENGTH_SHORT).show();
         }
     }
 

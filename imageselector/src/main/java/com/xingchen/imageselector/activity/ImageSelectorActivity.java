@@ -81,15 +81,8 @@ public class ImageSelectorActivity extends AppCompatActivity {
     private boolean isFolderOpen;
     private Uri mCameraUri;
     private RequestConfig config;
-    private Handler mHideHandler = new Handler();
-    private Runnable mHide = new Runnable() {
-        @Override
-        public void run() {
-            if (tvTime.getAlpha() == 1) {
-                ObjectAnimator.ofFloat(tvTime, "alpha", 1, 0).setDuration(300).start();
-            }
-        }
-    };
+    private Runnable mHideRunnable;
+    private Handler mHideHandler;
 
     /**
      * 启动图片选择器
@@ -138,6 +131,15 @@ public class ImageSelectorActivity extends AppCompatActivity {
      */
     private void initData() {
         config = getIntent().getParcelableExtra(ImageSelector.KEY_CONFIG);
+        mHideHandler = new Handler();
+        mHideRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (tvTime.getAlpha() == 1) {
+                    ObjectAnimator.ofFloat(tvTime, "alpha", 1, 0).setDuration(300).start();
+                }
+            }
+        };
     }
 
     /**
@@ -204,7 +206,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
                 switch (newState) {
                     case AbsListView.OnScrollListener.SCROLL_STATE_TOUCH_SCROLL:
                         // 手指触屏拉动准备滚动，只触发一次        顺序: 1
-                        mHideHandler.removeCallbacks(mHide);
+                        mHideHandler.removeCallbacks(mHideRunnable);
                         ObjectAnimator.ofFloat(tvTime, "alpha", 0, 1).setDuration(300).start();
                         break;
                     case AbsListView.OnScrollListener.SCROLL_STATE_FLING:
@@ -212,7 +214,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
                         break;
                     case AbsListView.OnScrollListener.SCROLL_STATE_IDLE:
                         // 整个滚动事件结束，只触发一次            顺序: 4
-                        mHideHandler.postDelayed(mHide, 1500);
+                        mHideHandler.postDelayed(mHideRunnable, 1500);
                         break;
                     default:
                         break;
@@ -298,7 +300,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
             tvFolderName.setText(folder.getFolderName());
             mImageAdapter.refresh(folder.getImageList());
             if (tvTime.getAlpha() == 0) {
-                mHideHandler.postDelayed(mHide, 1500);
+                mHideHandler.postDelayed(mHideRunnable, 1500);
                 ObjectAnimator.ofFloat(tvTime, "alpha", 0, 1).setDuration(300).start();
             }
         }

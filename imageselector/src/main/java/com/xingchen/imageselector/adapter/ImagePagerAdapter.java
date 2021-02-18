@@ -68,14 +68,9 @@ public class ImagePagerAdapter extends PagerAdapter {
      */
     private static class ResolutionLimitedTarget extends BitmapImageViewTarget {
         /**
-         * 默认分辨率阈值
-         */
-        private static final float DEFAULT_RESOLUTION = 1920f;
-
-        /**
          * 分辨率阈值
          */
-        private float resolution = DEFAULT_RESOLUTION;
+        private final float resolution = 1920f;
 
         ResolutionLimitedTarget(ImageView view) {
             super(view);
