@@ -97,8 +97,7 @@ public class PreviewActivity extends AppCompatActivity {
      * 初始化ViewPager
      */
     private void initViewPager() {
-        ImagePagerAdapter adapter = new ImagePagerAdapter(this, mTotalImages);
-        viewPager.setAdapter(adapter);
+        viewPager.setAdapter(new ImagePagerAdapter(mTotalImages));
         viewPager.setCurrentItem(position);
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
