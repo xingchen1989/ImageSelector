@@ -27,8 +27,8 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 public class ClipImageActivity extends AppCompatActivity {
-    private ImageView ivBack;
     private TextView tvCrop;
+    private ImageView ivBack;
     private RequestConfig config;
     private CropImageView cropImageView;
     private boolean isCameraImage;

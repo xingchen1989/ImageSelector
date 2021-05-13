@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -28,6 +29,7 @@ public class PreviewActivity extends AppCompatActivity {
     private TextView tvIndicator;
     private TextView tvConfirm;
     private TextView tvSelect;
+    private ImageView ivBack;
     private FrameLayout btnConfirm;
 
     private int position;//初始位置
@@ -90,6 +92,7 @@ public class PreviewActivity extends AppCompatActivity {
         tvIndicator = findViewById(R.id.tv_indicator);
         tvConfirm = findViewById(R.id.tv_confirm);
         tvSelect = findViewById(R.id.tv_select);
+        ivBack.findViewById(R.id.iv_back);
         btnConfirm = findViewById(R.id.btn_confirm);
     }
 
@@ -118,7 +121,7 @@ public class PreviewActivity extends AppCompatActivity {
     }
 
     private void initListener() {
-        findViewById(R.id.iv_back).setOnClickListener(new View.OnClickListener() {
+        ivBack.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 finish();

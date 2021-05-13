@@ -67,8 +67,7 @@ public class ImageSelector {
     }
 
     public static class ImageSelectorBuilder {
-
-        private RequestConfig config;
+        private final RequestConfig config;
 
         private ImageSelectorBuilder() {
             config = new RequestConfig();
@@ -170,8 +169,7 @@ public class ImageSelector {
          * @param requestCode
          */
         public void start(Activity activity, int requestCode) {
-            // 仅拍照，useCamera必须为true
-            if (config.onlyTakePhoto) {
+            if (config.onlyTakePhoto) {//仅拍照，useCamera必须为true
                 config.enableCamera = true;
             }
             if (config.isCrop) {
@@ -188,8 +186,7 @@ public class ImageSelector {
          * @param requestCode
          */
         public void start(Fragment fragment, int requestCode) {
-            // 仅拍照，useCamera必须为true
-            if (config.onlyTakePhoto) {
+            if (config.onlyTakePhoto) {//仅拍照，useCamera必须为true
                 config.enableCamera = true;
             }
             if (config.isCrop) {

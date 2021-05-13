@@ -15,9 +15,7 @@ import com.xingchen.imageselector.utils.ImageSelector;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
-
     private static final int REQUEST_CODE = 0x00000011;
-
     private ImageAdapter mImageAdapter;
 
     @Override
@@ -26,8 +24,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
         initView();
         initListener();
-        //预加载手机图片。加载图片前，请确保app有读取储存卡权限
-        ImageSelector.preload(this);
+        ImageSelector.preload(this);//预加载手机图片。加载图片前，请确保app有读取储存卡权限
 
     }
 

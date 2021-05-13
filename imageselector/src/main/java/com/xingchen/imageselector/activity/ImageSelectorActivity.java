@@ -32,7 +32,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -60,10 +59,8 @@ import java.util.Date;
 import java.util.Locale;
 
 public class ImageSelectorActivity extends AppCompatActivity {
-
-    private static final int PERMISSION_READ_EXTERNAL_REQUEST_CODE = 0x00000011;
-    private static final int PERMISSION_CAMERA_REQUEST_CODE = 0x00000012;
-
+    private static final int CAMERA_REQUEST_CODE = 0x00000011;
+    private static final int READ_EXTERNAL_REQUEST_CODE = 0x00000012;
     private View viewMask;
     private TextView tvTime;
     private TextView tvConfirm;
@@ -77,12 +74,11 @@ public class ImageSelectorActivity extends AppCompatActivity {
     private RecyclerView rvFolder;
     private ImageAdapter mImageAdapter;
     private FolderAdapter mFolderAdapter;
-
-    private boolean isFolderOpen;
     private Uri mCameraUri;
     private RequestConfig config;
     private Runnable mHideRunnable;
     private Handler mHideHandler;
+    private boolean isFolderOpen;
 
     /**
      * 启动图片选择器
@@ -123,6 +119,64 @@ public class ImageSelectorActivity extends AppCompatActivity {
             checkPermissionAndCamera();
         } else {
             checkPermissionAndLoadImages();
+        }
+    }
+
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        GridLayoutManager layoutManager = (GridLayoutManager) rvImage.getLayoutManager();
+        if (layoutManager != null && mImageAdapter != null) {
+            if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
+                layoutManager.setSpanCount(3);
+            } else if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                layoutManager.setSpanCount(5);
+            }
+            mImageAdapter.notifyDataSetChanged();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == READ_EXTERNAL_REQUEST_CODE) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                loadImageAndUpdateView();//允许权限，加载图片。
+            } else {
+                showExceptionDialog();//拒绝权限，弹出提示框。
+            }
+        } else if (requestCode == CAMERA_REQUEST_CODE) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
+                mCameraUri = openCamera();//允许权限，有调起相机拍照。
+            } else {
+                showExceptionDialog();//拒绝权限，弹出提示框。
+            }
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == ImageSelector.SELECTOR_REQUEST_CODE) {
+            if (resultCode == RESULT_OK) {
+                //如果用户在预览页点击了确定，就直接把用户选中的图片返回给用户。
+                confirmSelect();
+            } else {
+                //否则，就刷新当前页面。
+                mImageAdapter.notifyDataSetChanged();
+                setSelectImageCount(mImageAdapter.getSelectImages().size());
+            }
+        } else if (requestCode == ImageSelector.CAMERA_REQUEST_CODE) {
+            if (resultCode == RESULT_OK) {
+                ArrayList<Uri> imageContentUris = new ArrayList<>();
+                addPictureToAlbum(mCameraUri);
+                imageContentUris.add(mCameraUri);
+                saveImageAndFinish(imageContentUris, true);
+            } else {
+                if (config.onlyTakePhoto) {
+                    finish();
+                }
+            }
         }
     }
 
@@ -516,28 +570,32 @@ public class ImageSelectorActivity extends AppCompatActivity {
     }
 
     /**
-     * 检查相机权限并打开相机
+     * 检查权限并加载SD卡里的图片。
      */
-    private void checkPermissionAndCamera() {
-        int hasCameraPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
-        if (hasCameraPermission == PackageManager.PERMISSION_GRANTED) {
-            //有调起相机拍照。
-            mCameraUri = openCamera();
-        } else {
-            //没有权限，申请权限。
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, PERMISSION_CAMERA_REQUEST_CODE);
+    private void checkPermissionAndLoadImages() {
+        int hasReadExternalPermission = ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
+        if (hasReadExternalPermission == PackageManager.PERMISSION_GRANTED) {//有权限，加载图片。
+            loadImageAndUpdateView();
+        } else {//没有权限，申请权限。
+            String[] permissions = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE};
+            ActivityCompat.requestPermissions(this, permissions, READ_EXTERNAL_REQUEST_CODE);
         }
     }
 
     /**
-     * 检查权限并加载SD卡里的图片。
+     * 检查相机权限并打开相机
+     * 因为同时要保存到相册，所以一同申请写权限
      */
-    private void checkPermissionAndLoadImages() {
-        int hasReadExternalPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
-        if (hasReadExternalPermission == PackageManager.PERMISSION_GRANTED) {//有权限，加载图片。
-            loadImageAndUpdateView();
-        } else {//没有权限，申请权限。
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_READ_EXTERNAL_REQUEST_CODE);
+    private void checkPermissionAndCamera() {
+        int hasCameraPermission = ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
+        int hasWriteExternalPermission = ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        if (hasCameraPermission == PackageManager.PERMISSION_GRANTED && hasWriteExternalPermission == PackageManager.PERMISSION_GRANTED) {
+            //有调起相机拍照。
+            mCameraUri = openCamera();
+        } else {
+            //没有权限，申请权限。
+            String[] permissions = new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+            ActivityCompat.requestPermissions(this, permissions, CAMERA_REQUEST_CODE);
         }
     }
 
@@ -567,64 +625,6 @@ public class ImageSelectorActivity extends AppCompatActivity {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == PERMISSION_READ_EXTERNAL_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                loadImageAndUpdateView();//允许权限，加载图片。
-            } else {
-                showExceptionDialog();//拒绝权限，弹出提示框。
-            }
-        } else if (requestCode == PERMISSION_CAMERA_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                mCameraUri = openCamera();//允许权限，有调起相机拍照。
-            } else {
-                showExceptionDialog(); //拒绝权限，弹出提示框。
-            }
-        }
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == ImageSelector.SELECTOR_REQUEST_CODE) {
-            if (resultCode == RESULT_OK) {
-                //如果用户在预览页点击了确定，就直接把用户选中的图片返回给用户。
-                confirmSelect();
-            } else {
-                //否则，就刷新当前页面。
-                mImageAdapter.notifyDataSetChanged();
-                setSelectImageCount(mImageAdapter.getSelectImages().size());
-            }
-        } else if (requestCode == ImageSelector.CAMERA_REQUEST_CODE) {
-            if (resultCode == RESULT_OK) {
-                ArrayList<Uri> imageContentUris = new ArrayList<>();
-                addPictureToAlbum(mCameraUri);
-                imageContentUris.add(mCameraUri);
-                saveImageAndFinish(imageContentUris, true);
-            } else {
-                if (config.onlyTakePhoto) {
-                    finish();
-                }
-            }
-        }
-    }
-
-    @Override
-    public void onConfigurationChanged(@NonNull Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        GridLayoutManager layoutManager = (GridLayoutManager) rvImage.getLayoutManager();
-        if (layoutManager != null && mImageAdapter != null) {
-            if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
-                layoutManager.setSpanCount(3);
-            } else if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                layoutManager.setSpanCount(5);
-            }
-            mImageAdapter.notifyDataSetChanged();
         }
     }
 }
