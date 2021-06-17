@@ -88,11 +88,11 @@ public class PreviewActivity extends AppCompatActivity {
      * 初始化控件
      */
     private void initView() {
+        ivBack=findViewById(R.id.iv_back);
         viewPager = findViewById(R.id.vp_image);
         tvIndicator = findViewById(R.id.tv_indicator);
         tvConfirm = findViewById(R.id.tv_confirm);
         tvSelect = findViewById(R.id.tv_select);
-        ivBack.findViewById(R.id.iv_back);
         btnConfirm = findViewById(R.id.btn_confirm);
     }
 
