@@ -516,28 +516,28 @@ public class ImageSelectorActivity extends AppCompatActivity {
      * @return
      */
     private Uri openCamera() {
-        Uri imageUri;
-        /*获取当前系统的android版本号*/
-        File photoFile = createImageFile();
-        if (android.os.Build.VERSION.SDK_INT < 24) {
-            imageUri = Uri.fromFile(photoFile);
-        } else {
-            //方式一，需要读写权限
+        Uri imageUri = null;
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (intent.resolveActivity(getPackageManager()) != null) {
+            /*获取当前系统的android版本号*/
+            File photoFile = createImageFile();
+            if (android.os.Build.VERSION.SDK_INT < 24) {
+                imageUri = Uri.fromFile(photoFile);
+            } else {
+                //方式一，需要读写权限
                         /*ContentValues contentValues = new ContentValues(1);
                         contentValues.put(MediaStore.Images.Media.DATA, mTmpFile.getAbsolutePath());
                         imageUri = getActivity().getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);*/
 
-            // 方式2 置入一个不设防的VmPolicy（不设置的话 7.0以上一调用拍照功能就崩溃了）
+                // 方式2 置入一个不设防的VmPolicy（不设置的话 7.0以上一调用拍照功能就崩溃了）
                         /*StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
                         StrictMode.setVmPolicy(builder.build());
                         imageUri = Uri.fromFile(mTmpFile);*/
 
-            //方式3，使用 FileProvider 类进行授权，可以不申请读写权限
-            imageUri = FileProvider.getUriForFile(this, getPackageName() + ".imageSelectorProvider", photoFile);
-        }
-        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
-        if (intent.resolveActivity(getPackageManager()) != null) {
+                //方式3，使用 FileProvider 类进行授权，可以不申请读写权限
+                imageUri = FileProvider.getUriForFile(this, getPackageName() + ".imageSelectorProvider", photoFile);
+            }
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
             startActivityForResult(intent, ImageSelector.CAMERA_REQUEST_CODE);
         } else {
             Toast.makeText(this, "设备不支持", Toast.LENGTH_SHORT).show();
