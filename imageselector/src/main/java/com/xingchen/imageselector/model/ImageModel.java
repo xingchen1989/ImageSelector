@@ -22,9 +22,6 @@ import java.util.List;
 
 public class ImageModel {
     private static ImageModel mInstance;
-    private static ArrayList<ImageFolder> cacheImageList = new ArrayList<>();
-
-    private PhotoContentObserver observer;
 
     public interface DataCallback {
         void onSuccess(ArrayList<ImageFolder> imageFolders);
@@ -42,53 +39,23 @@ public class ImageModel {
     }
 
     /**
-     * 注册媒体内容监听器
-     *
-     * @param context
-     */
-    public void registerContentObserver(Context context) {
-        if (observer == null) {
-            Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
-            Context appContext = context.getApplicationContext();
-            observer = new PhotoContentObserver(appContext);
-            appContext.getContentResolver().registerContentObserver(uri, false, observer);
-        }
-    }
-
-    /**
      * 异步加载图片
      *
      * @param context
      * @param isPreLoad
      * @param callback
      */
-    public void asyncLoadImage(final Context context, final boolean isPreLoad, final DataCallback callback) {
+    public void asyncLoadImage(final Context context, final DataCallback callback) {
         new Thread(new Runnable() {
             @Override
             public void run() {
                 synchronized (ImageModel.class) {
-                    if (cacheImageList.isEmpty() || isPreLoad) {
-                        cacheImageList.clear();
-                        cacheImageList = splitFolder(context, scanImages(context));
-                    }
                     if (callback != null) {
-                        callback.onSuccess(cacheImageList);
+                        callback.onSuccess(splitFolder(context, scanImages(context)));
                     }
                 }
             }
         }).start();
-    }
-
-    /**
-     * 预加载图片
-     *
-     * @param context
-     */
-    private void preloadImage(Context context) {
-        int hasReadExternalPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE);
-        if (hasReadExternalPermission == PackageManager.PERMISSION_GRANTED) {
-            asyncLoadImage(context, true, null);
-        }
     }
 
     /**
@@ -193,20 +160,5 @@ public class ImageModel {
             folder.addImage(image);
         }
         return folders;
-    }
-
-    private class PhotoContentObserver extends ContentObserver {
-        private final Context context;
-
-        PhotoContentObserver(Context appContext) {
-            super(null);
-            context = appContext;
-        }
-
-        @Override
-        public void onChange(boolean selfChange, Uri uri) {
-            super.onChange(selfChange, uri);
-            preloadImage(context);
-        }
     }
 }

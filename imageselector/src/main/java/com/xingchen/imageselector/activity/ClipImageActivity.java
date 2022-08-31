@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
@@ -12,6 +13,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
@@ -29,7 +31,6 @@ import java.util.UUID;
 public class ClipImageActivity extends AppCompatActivity {
     private TextView tvCrop;
     private ImageView ivBack;
-    private RequestConfig config;
     private CropImageView cropImageView;
     private boolean isCameraImage;
 
@@ -38,10 +39,8 @@ public class ClipImageActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_clip_image);
         setStatusBarColor();//设置状态栏颜色
-        initData();//初始化数据
         initView();//初始化视图
         initListener();//初始化监听器
-        ImageSelectorActivity.openActivity(this, ImageSelector.SELECTOR_REQUEST_CODE, config);//启动图片选择器
     }
 
     /**
@@ -80,19 +79,14 @@ public class ClipImageActivity extends AppCompatActivity {
     }
 
     /**
-     * 初始化数据
-     */
-    private void initData() {
-        config = getIntent().getParcelableExtra(ImageSelector.KEY_CONFIG);
-    }
-
-    /**
      * 初始化控件
      */
     private void initView() {
         ivBack = findViewById(R.id.iv_back);
         tvCrop = findViewById(R.id.tv_crop);
         cropImageView = findViewById(R.id.cropImageView);
+        RequestConfig config = getIntent().getParcelableExtra(ImageSelector.KEY_CONFIG);
+        ImageSelectorActivity.openActivity(this, ImageSelector.SELECTOR_REQUEST_CODE, config);
     }
 
     private void initListener() {

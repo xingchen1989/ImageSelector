@@ -74,11 +74,11 @@ public class ImageSelectorActivity extends AppCompatActivity {
     private RecyclerView rvFolder;
     private ImageAdapter mImageAdapter;
     private FolderAdapter mFolderAdapter;
-    private Uri mCameraUri;
-    private RequestConfig config;
     private Runnable mHideRunnable;
     private Handler mHideHandler;
+    private RequestConfig config;
     private boolean isFolderOpen;
+    private Uri mCameraUri;
 
     /**
      * 启动图片选择器
@@ -115,11 +115,6 @@ public class ImageSelectorActivity extends AppCompatActivity {
         initImageList();//初始化图片列表
         initFolderList();//初始化文件夹列表
         setSelectImageCount(0);
-        if (config != null && config.onlyTakePhoto) {
-            checkPermissionAndCamera();
-        } else {
-            checkPermissionAndLoadImages();
-        }
     }
 
     @Override
@@ -172,11 +167,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
                 addPictureToAlbum(mCameraUri);
                 imageContentUris.add(mCameraUri);
                 saveImageAndFinish(imageContentUris, true);
-            } else {
-                if (config.onlyTakePhoto) {
-                    finish();
-                }
-            }
+            } else if (config.onlyTakePhoto) finish();
         }
     }
 
@@ -211,6 +202,8 @@ public class ImageSelectorActivity extends AppCompatActivity {
         btnPreview = findViewById(R.id.btn_preview);
         btnFolder = findViewById(R.id.btn_folder);
         viewMask = findViewById(R.id.view_mask);
+        if (config.onlyTakePhoto) checkPermissionAndCamera();
+        else checkPermissionAndLoadImages();
     }
 
     /**
@@ -246,11 +239,8 @@ public class ImageSelectorActivity extends AppCompatActivity {
         btnFolder.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (isFolderOpen) {
-                    closeFolder();
-                } else {
-                    openFolder();
-                }
+                if (isFolderOpen) closeFolder();
+                else openFolder();
             }
         });
         rvImage.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -261,7 +251,6 @@ public class ImageSelectorActivity extends AppCompatActivity {
                     case AbsListView.OnScrollListener.SCROLL_STATE_TOUCH_SCROLL:
                         // 手指触屏拉动准备滚动，只触发一次        顺序: 1
                         mHideHandler.removeCallbacks(mHideRunnable);
-                        ObjectAnimator.ofFloat(tvTime, "alpha", 0, 1).setDuration(300).start();
                         break;
                     case AbsListView.OnScrollListener.SCROLL_STATE_FLING:
                         // 持续滚动开始，只触发一次                顺序: 2
@@ -457,8 +446,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
      * 加载图片并且更新视图
      */
     private void loadImageAndUpdateView() {
-        ImageModel.getInstance().registerContentObserver(this);
-        ImageModel.getInstance().asyncLoadImage(this, false, new ImageModel.DataCallback() {
+        ImageModel.getInstance().asyncLoadImage(this, new ImageModel.DataCallback() {
             @Override
             public void onSuccess(final ArrayList<ImageFolder> imageFolders) {
                 runOnUiThread(new Runnable() {
