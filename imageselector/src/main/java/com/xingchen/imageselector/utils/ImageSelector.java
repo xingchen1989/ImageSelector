@@ -53,15 +53,6 @@ public class ImageSelector {
 
     public static final int CAMERA_REQUEST_CODE = 0x00000011;
 
-    /**
-     * 预加载图片
-     *
-     * @param context
-     */
-    public static void preload(Context context) {
-        ImageModel.getInstance().preloadAndRegisterContentObserver(context);
-    }
-
     public static ImageSelectorBuilder builder() {
         return new ImageSelectorBuilder();
     }

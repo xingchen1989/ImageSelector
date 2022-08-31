@@ -24,7 +24,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
         initView();
         initListener();
-        ImageSelector.preload(this);//预加载手机图片。加载图片前，请确保app有读取储存卡权限
+//        ImageSelector.preload(this);//预加载手机图片。加载图片前，请确保app有读取储存卡权限
 
     }
 

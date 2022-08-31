@@ -22,7 +22,7 @@ import java.util.List;
 
 public class ImageModel {
     private static ImageModel mInstance;
-    private static ArrayList<ImageFolder> cacheImageList = null;
+    private static ArrayList<ImageFolder> cacheImageList = new ArrayList<>();
 
     private PhotoContentObserver observer;
 
@@ -42,18 +42,17 @@ public class ImageModel {
     }
 
     /**
-     * 预加载图片
+     * 注册媒体内容监听器
      *
      * @param context
      */
-    public void preloadAndRegisterContentObserver(Context context) {
+    public void registerContentObserver(Context context) {
         if (observer == null) {
-            observer = new PhotoContentObserver(context.getApplicationContext());
-            context.getApplicationContext()
-                    .getContentResolver()
-                    .registerContentObserver(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, false, observer);
+            Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+            Context appContext = context.getApplicationContext();
+            observer = new PhotoContentObserver(appContext);
+            appContext.getContentResolver().registerContentObserver(uri, false, observer);
         }
-        preloadImage(context);
     }
 
     /**
@@ -63,32 +62,18 @@ public class ImageModel {
      * @param isPreLoad
      * @param callback
      */
-    public void loadImage(final Context context, final boolean isPreLoad, final DataCallback callback) {
+    public void asyncLoadImage(final Context context, final boolean isPreLoad, final DataCallback callback) {
         new Thread(new Runnable() {
             @Override
             public void run() {
                 synchronized (ImageModel.class) {
-                    if (cacheImageList == null || isPreLoad) {
+                    if (cacheImageList.isEmpty() || isPreLoad) {
+                        cacheImageList.clear();
                         cacheImageList = splitFolder(context, scanImages(context));
                     }
                     if (callback != null) {
                         callback.onSuccess(cacheImageList);
                     }
-                }
-            }
-        }).start();
-    }
-
-    /**
-     * 清空缓存
-     */
-    private void clearCache() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                if (cacheImageList != null) {
-                    cacheImageList.clear();
-                    cacheImageList = null;
                 }
             }
         }).start();
@@ -102,7 +87,7 @@ public class ImageModel {
     private void preloadImage(Context context) {
         int hasReadExternalPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE);
         if (hasReadExternalPermission == PackageManager.PERMISSION_GRANTED) {
-            loadImage(context, true, null);
+            asyncLoadImage(context, true, null);
         }
     }
 
@@ -211,7 +196,7 @@ public class ImageModel {
     }
 
     private class PhotoContentObserver extends ContentObserver {
-        private Context context;
+        private final Context context;
 
         PhotoContentObserver(Context appContext) {
             super(null);
@@ -221,7 +206,6 @@ public class ImageModel {
         @Override
         public void onChange(boolean selfChange, Uri uri) {
             super.onChange(selfChange, uri);
-            clearCache();
             preloadImage(context);
         }
     }

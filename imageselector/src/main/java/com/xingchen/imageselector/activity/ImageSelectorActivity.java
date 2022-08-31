@@ -238,7 +238,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
         btnPreview.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ArrayList<Image> totalImages = new ArrayList<>(mImageAdapter.getSelectImages());
+                ArrayList<Image> totalImages = new ArrayList<Image>(mImageAdapter.getSelectImages());
                 PreviewActivity.openActivity(ImageSelectorActivity.this, ImageSelector.SELECTOR_REQUEST_CODE,
                         0, config, mImageAdapter.getSelectImages(), totalImages);
             }
@@ -457,7 +457,8 @@ public class ImageSelectorActivity extends AppCompatActivity {
      * 加载图片并且更新视图
      */
     private void loadImageAndUpdateView() {
-        ImageModel.getInstance().loadImage(this, false, new ImageModel.DataCallback() {
+        ImageModel.getInstance().registerContentObserver(this);
+        ImageModel.getInstance().asyncLoadImage(this, false, new ImageModel.DataCallback() {
             @Override
             public void onSuccess(final ArrayList<ImageFolder> imageFolders) {
                 runOnUiThread(new Runnable() {
