@@ -89,9 +89,7 @@ public class ImageModel {
                 //获取图片uri
                 Uri uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
 //                Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI.buildUpon().appendPath(String.valueOf(id)).build();
-                if (checkImageValid(path)) {
-                    images.add(new Image(time, mimeType, name, path, uri));
-                }
+                if (checkImageValid(path)) images.add(new Image(time, mimeType, name, path, uri));
             }
             mCursor.close();
         }
