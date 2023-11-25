@@ -33,6 +33,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.FileProvider;
+import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -42,6 +43,8 @@ import androidx.recyclerview.widget.SimpleItemAnimator;
 import com.xingchen.imageselector.R;
 import com.xingchen.imageselector.adapter.FolderAdapter;
 import com.xingchen.imageselector.adapter.ImageAdapter;
+import com.xingchen.imageselector.dialog.PermissionCameraDialog;
+import com.xingchen.imageselector.dialog.PermissionExternalDialog;
 import com.xingchen.imageselector.entry.Image;
 import com.xingchen.imageselector.entry.ImageFolder;
 import com.xingchen.imageselector.entry.RequestConfig;
@@ -64,7 +67,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
     private View viewMask;
     private TextView tvTime;
     private TextView tvConfirm;
-    private TextView tvFolderName;
+    private TextView tvFolder;
     private TextView tvPreview;
     private ImageView ivBack;
     private FrameLayout btnConfirm;
@@ -79,6 +82,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
     private RequestConfig config;
     private boolean isFolderOpen;
     private Uri mCameraUri;
+    private DialogFragment dialogFragment;
 
     /**
      * 启动图片选择器
@@ -136,12 +140,14 @@ public class ImageSelectorActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == READ_EXTERNAL_REQUEST_CODE) {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (dialogFragment != null) dialogFragment.dismiss();
                 loadImageAndUpdateView();//允许权限，加载图片。
             } else {
                 showExceptionDialog();//拒绝权限，弹出提示框。
             }
         } else if (requestCode == CAMERA_REQUEST_CODE) {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
+                if (dialogFragment != null) dialogFragment.dismiss();
                 mCameraUri = openCamera();//允许权限，有调起相机拍照。
             } else {
                 showExceptionDialog();//拒绝权限，弹出提示框。
@@ -194,16 +200,16 @@ public class ImageSelectorActivity extends AppCompatActivity {
         ivBack = findViewById(R.id.iv_back);
         rvImage = findViewById(R.id.rv_image);
         rvFolder = findViewById(R.id.rv_folder);
+        tvFolder = findViewById(R.id.tv_folder);
         tvTime = findViewById(R.id.tv_time);
         tvPreview = findViewById(R.id.tv_preview);
         tvConfirm = findViewById(R.id.tv_confirm);
-        tvFolderName = findViewById(R.id.tv_folder_name);
         btnConfirm = findViewById(R.id.btn_confirm);
         btnPreview = findViewById(R.id.btn_preview);
         btnFolder = findViewById(R.id.btn_folder);
         viewMask = findViewById(R.id.view_mask);
         if (config.onlyTakePhoto) checkPermissionAndCamera();
-        else checkPermissionAndLoadImages();
+        else checkPermissionAndLoad();
     }
 
     /**
@@ -340,7 +346,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
      */
     private void refreshImages(ImageFolder folder) {
         if (folder != null) {
-            tvFolderName.setText(folder.getFolderName());
+            tvFolder.setText(folder.getFolderName());
             mImageAdapter.refresh(folder.getImageList());
             if (tvTime.getAlpha() == 0) {
                 mHideHandler.postDelayed(mHideRunnable, 1500);
@@ -549,25 +555,27 @@ public class ImageSelectorActivity extends AppCompatActivity {
                         finish();
                     }
                 }).setPositiveButton(R.string.selector_confirm, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.cancel();
-                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getPackageName()));
-                startActivity(intent);
-            }
-        }).show();
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.cancel();
+                        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getPackageName()));
+                        startActivity(intent);
+                    }
+                }).show();
     }
 
     /**
      * 检查权限并加载SD卡里的图片。
      */
-    private void checkPermissionAndLoadImages() {
-        int hasReadExternalPermission = ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
-        if (hasReadExternalPermission == PackageManager.PERMISSION_GRANTED) {//有权限，加载图片。
+    private void checkPermissionAndLoad() {
+        int hasReadPermission = ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
+        if (hasReadPermission == PackageManager.PERMISSION_GRANTED) {//有权限，加载图片。
             loadImageAndUpdateView();
         } else {//没有权限，申请权限。
             String[] permissions = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE};
             ActivityCompat.requestPermissions(this, permissions, READ_EXTERNAL_REQUEST_CODE);
+            dialogFragment = new PermissionExternalDialog();
+            dialogFragment.show(getSupportFragmentManager(), "PermissionExternalDialog");
         }
     }
 
@@ -577,14 +585,16 @@ public class ImageSelectorActivity extends AppCompatActivity {
      */
     private void checkPermissionAndCamera() {
         int hasCameraPermission = ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
-        int hasWriteExternalPermission = ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        if (hasCameraPermission == PackageManager.PERMISSION_GRANTED && hasWriteExternalPermission == PackageManager.PERMISSION_GRANTED) {
+        int hasWritePermission = ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        if (hasCameraPermission == PackageManager.PERMISSION_GRANTED && hasWritePermission == PackageManager.PERMISSION_GRANTED) {
             //有调起相机拍照。
             mCameraUri = openCamera();
         } else {
             //没有权限，申请权限。
             String[] permissions = new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE};
             ActivityCompat.requestPermissions(this, permissions, CAMERA_REQUEST_CODE);
+            dialogFragment = new PermissionCameraDialog();
+            dialogFragment.show(getSupportFragmentManager(), "PermissionCameraDialog");
         }
     }
 
