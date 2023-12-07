@@ -1,14 +1,12 @@
 package com.xingchen.imageselector.utils;
 
 import android.app.Activity;
-import android.content.Context;
 
 import androidx.fragment.app.Fragment;
 
 import com.xingchen.imageselector.activity.ClipImageActivity;
-import com.xingchen.imageselector.activity.ImageSelectorActivity;
+import com.xingchen.imageselector.activity.SelectorActivity;
 import com.xingchen.imageselector.entry.RequestConfig;
-import com.xingchen.imageselector.model.ImageModel;
 
 import java.util.ArrayList;
 
@@ -166,7 +164,7 @@ public class ImageSelector {
             if (config.isCrop) {
                 ClipImageActivity.openActivity(activity, requestCode, config);
             } else {
-                ImageSelectorActivity.openActivity(activity, requestCode, config);
+                SelectorActivity.openActivity(activity, requestCode, config);
             }
         }
 
@@ -183,7 +181,7 @@ public class ImageSelector {
             if (config.isCrop) {
                 ClipImageActivity.openActivity(fragment, requestCode, config);
             } else {
-                ImageSelectorActivity.openActivity(fragment, requestCode, config);
+                SelectorActivity.openActivity(fragment, requestCode, config);
             }
         }
     }

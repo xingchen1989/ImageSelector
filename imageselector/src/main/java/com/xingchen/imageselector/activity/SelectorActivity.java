@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -26,7 +27,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -61,7 +61,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 
-public class ImageSelectorActivity extends AppCompatActivity {
+public class SelectorActivity extends AppCompatActivity {
     private static final int CAMERA_REQUEST_CODE = 0x00000011;
     private static final int READ_EXTERNAL_REQUEST_CODE = 0x00000012;
     private View viewMask;
@@ -91,7 +91,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
      * @param config
      */
     public static void openActivity(Activity activity, int requestCode, RequestConfig config) {
-        Intent intent = new Intent(activity, ImageSelectorActivity.class);
+        Intent intent = new Intent(activity, SelectorActivity.class);
         intent.putExtra(ImageSelector.KEY_CONFIG, config);
         activity.startActivityForResult(intent, requestCode);
     }
@@ -103,7 +103,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
      * @param config
      */
     public static void openActivity(Fragment fragment, int requestCode, RequestConfig config) {
-        Intent intent = new Intent(fragment.getActivity(), ImageSelectorActivity.class);
+        Intent intent = new Intent(fragment.getActivity(), SelectorActivity.class);
         intent.putExtra(ImageSelector.KEY_CONFIG, config);
         fragment.startActivityForResult(intent, requestCode);
     }
@@ -238,7 +238,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 ArrayList<Image> totalImages = new ArrayList<Image>(mImageAdapter.getSelectImages());
-                PreviewActivity.openActivity(ImageSelectorActivity.this, ImageSelector.SELECTOR_REQUEST_CODE,
+                PreviewActivity.openActivity(SelectorActivity.this, ImageSelector.SELECTOR_REQUEST_CODE,
                         0, config, mImageAdapter.getSelectImages(), totalImages);
             }
         });
@@ -299,7 +299,7 @@ public class ImageSelectorActivity extends AppCompatActivity {
         mImageAdapter.setItemClickListener(new ImageAdapter.OnItemClickListener() {
             @Override
             public void OnItemClick(Image image, int position) {
-                PreviewActivity.openActivity(ImageSelectorActivity.this, ImageSelector.SELECTOR_REQUEST_CODE,
+                PreviewActivity.openActivity(SelectorActivity.this, ImageSelector.SELECTOR_REQUEST_CODE,
                         position, config, mImageAdapter.getSelectImages(), mImageAdapter.getTotalImages());
             }
 
@@ -316,8 +316,8 @@ public class ImageSelectorActivity extends AppCompatActivity {
      * 初始化文件夹列表
      */
     private void initFolderList() {
-        rvFolder.setLayoutManager(new LinearLayoutManager(ImageSelectorActivity.this));
-        mFolderAdapter = new FolderAdapter(ImageSelectorActivity.this);
+        rvFolder.setLayoutManager(new LinearLayoutManager(SelectorActivity.this));
+        mFolderAdapter = new FolderAdapter(SelectorActivity.this);
         mFolderAdapter.setOnFolderSelectListener(new FolderAdapter.OnFolderSelectListener() {
             @Override
             public void OnFolderSelect(ImageFolder folder) {
@@ -511,12 +511,11 @@ public class ImageSelectorActivity extends AppCompatActivity {
      * @return
      */
     private Uri openCamera() {
-        Uri imageUri = null;
-        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        if (intent.resolveActivity(getPackageManager()) != null) {
-            /*获取当前系统的android版本号*/
+        try {
+            Uri imageUri = null;
             File photoFile = createImageFile();
-            if (android.os.Build.VERSION.SDK_INT < 24) {
+            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            if (Build.VERSION.SDK_INT < 24) {
                 imageUri = Uri.fromFile(photoFile);
             } else {
                 //方式一，需要读写权限
@@ -534,10 +533,10 @@ public class ImageSelectorActivity extends AppCompatActivity {
             }
             intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
             startActivityForResult(intent, ImageSelector.CAMERA_REQUEST_CODE);
-        } else {
-            Toast.makeText(this, "设备不支持", Toast.LENGTH_SHORT).show();
+            return imageUri;
+        } catch (Exception e) {
+            return null;
         }
-        return imageUri;
     }
 
     /**

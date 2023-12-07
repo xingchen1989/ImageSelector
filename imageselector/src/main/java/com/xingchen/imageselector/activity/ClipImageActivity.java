@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
@@ -13,7 +12,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
@@ -86,7 +84,7 @@ public class ClipImageActivity extends AppCompatActivity {
         tvCrop = findViewById(R.id.tv_crop);
         cropImageView = findViewById(R.id.cropImageView);
         RequestConfig config = getIntent().getParcelableExtra(ImageSelector.KEY_CONFIG);
-        ImageSelectorActivity.openActivity(this, ImageSelector.SELECTOR_REQUEST_CODE, config);
+        SelectorActivity.openActivity(this, ImageSelector.SELECTOR_REQUEST_CODE, config);
     }
 
     private void initListener() {
