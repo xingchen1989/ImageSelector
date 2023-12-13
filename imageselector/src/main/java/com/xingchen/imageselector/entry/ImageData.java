@@ -7,27 +7,20 @@ import android.os.Parcelable;
 /**
  * 图片实体类
  */
-public class Image implements Parcelable {
-    private long addedTime;//图片首次添加时间
+public class ImageData implements Parcelable {
     private String mimeType;//图片类型
     private String name;//图片名称
     private String path;//图片路径
     private Uri contentUri;//图片uri
+    private long addedTime;//图片首次添加时间
+    private boolean isSelected;//是否选中
 
-    public Image(long addedTime, String mimeType, String name, String path, Uri contentUri) {
+    public ImageData(long addedTime, String mimeType, String name, String path, Uri contentUri) {
         this.addedTime = addedTime;
         this.mimeType = mimeType;
         this.name = name;
         this.path = path;
         this.contentUri = contentUri;
-    }
-
-    public long getAddedTime() {
-        return addedTime;
-    }
-
-    public void setAddedTime(long addedTime) {
-        this.addedTime = addedTime;
     }
 
     public String getName() {
@@ -62,6 +55,22 @@ public class Image implements Parcelable {
         this.contentUri = contentUri;
     }
 
+    public long getAddedTime() {
+        return addedTime;
+    }
+
+    public void setAddedTime(long addedTime) {
+        this.addedTime = addedTime;
+    }
+
+    public boolean isSelected() {
+        return isSelected;
+    }
+
+    public void setSelected(boolean selected) {
+        isSelected = selected;
+    }
+
     /**
      * 是否是Gif图片
      *
@@ -84,22 +93,22 @@ public class Image implements Parcelable {
         dest.writeParcelable(this.contentUri, flags);
     }
 
-    private Image(Parcel in) {
+    private ImageData(Parcel in) {
         this.addedTime = in.readLong();
         this.name = in.readString();
         this.mimeType = in.readString();
         this.contentUri = in.readParcelable(Uri.class.getClassLoader());
     }
 
-    public static final Creator<Image> CREATOR = new Creator<Image>() {
+    public static final Creator<ImageData> CREATOR = new Creator<ImageData>() {
         @Override
-        public Image createFromParcel(Parcel source) {
-            return new Image(source);
+        public ImageData createFromParcel(Parcel source) {
+            return new ImageData(source);
         }
 
         @Override
-        public Image[] newArray(int size) {
-            return new Image[size];
+        public ImageData[] newArray(int size) {
+            return new ImageData[size];
         }
     };
 }

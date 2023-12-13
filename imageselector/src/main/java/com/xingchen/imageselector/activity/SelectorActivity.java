@@ -38,7 +38,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.xingchen.imageselector.R;
 import com.xingchen.imageselector.adapter.FolderAdapter;
 import com.xingchen.imageselector.adapter.ImageAdapter;
-import com.xingchen.imageselector.entry.Image;
+import com.xingchen.imageselector.entry.ImageData;
 import com.xingchen.imageselector.entry.ImageFolder;
 import com.xingchen.imageselector.entry.RequestConfig;
 import com.xingchen.imageselector.model.ImageModel;
@@ -207,8 +207,7 @@ public class SelectorActivity extends AppCompatActivity {
     private void initImageList() {
         GridLayoutManager mLayoutManager = new GridLayoutManager(this, 3);
         mImageAdapter = new ImageAdapter(this, config);
-        mImageAdapter.setSelectListener((image, isSelect, selectCount) -> setSelectCount(selectCount));
-        mImageAdapter.setItemClickListener(new MyItemClickListener());
+        mImageAdapter.setItemActionListener(new MyItemClickListener());
         rvImage.setLayoutManager(mLayoutManager);
         rvImage.setAdapter(mImageAdapter);
     }
@@ -329,7 +328,7 @@ public class SelectorActivity extends AppCompatActivity {
      * 预览所选图片
      */
     private void previewImage() {
-        ArrayList<Image> totalImages = new ArrayList<>(mImageAdapter.getSelectImages());
+        ArrayList<ImageData> totalImages = new ArrayList<>(mImageAdapter.getSelectImages());
         PreviewActivity.openActivity(this, ImageSelector.SELECTOR_REQUEST_CODE,
                 0, config, mImageAdapter.getSelectImages(), totalImages);
     }
@@ -339,7 +338,7 @@ public class SelectorActivity extends AppCompatActivity {
      */
     private void confirmSelect() {
         ArrayList<Uri> imageContentUris = new ArrayList<>();
-        for (Image image : mImageAdapter.getSelectImages()) {
+        for (ImageData image : mImageAdapter.getSelectImages()) {
             imageContentUris.add(image.getContentUri());
         }
         saveImageAndFinish(imageContentUris, false);
@@ -459,16 +458,21 @@ public class SelectorActivity extends AppCompatActivity {
         }
     }
 
-    private class MyItemClickListener implements ImageAdapter.OnItemClickListener {
-        @Override
-        public void OnItemClick(Image image, int position) {
-            PreviewActivity.openActivity(SelectorActivity.this, ImageSelector.SELECTOR_REQUEST_CODE,
-                    position, config, mImageAdapter.getSelectImages(), mImageAdapter.getTotalImages());
-        }
-
+    private class MyItemClickListener implements ImageAdapter.ItemActionListener {
         @Override
         public void OnCameraClick() {
 
+        }
+
+        @Override
+        public void OnImageSelect(ImageData image, int selectCount) {
+            setSelectCount(selectCount);
+        }
+
+        @Override
+        public void OnImageClick(ImageData image, int position) {
+            PreviewActivity.openActivity(SelectorActivity.this, ImageSelector.SELECTOR_REQUEST_CODE,
+                    position, config, mImageAdapter.getSelectImages(), mImageAdapter.getTotalImages());
         }
     }
 
@@ -499,9 +503,9 @@ public class SelectorActivity extends AppCompatActivity {
             super.onScrolled(recyclerView, dx, dy);
             GridLayoutManager layoutManager = (GridLayoutManager) rvImage.getLayoutManager();
             int position = Objects.requireNonNull(layoutManager).findFirstVisibleItemPosition();
-            Image firstVisibleImage = mImageAdapter.getFirstVisibleImage(position);
-            if (firstVisibleImage != null) {
-                tvAddTime.setText(getImageTime(SelectorActivity.this, firstVisibleImage.getAddedTime()));
+            ImageData firstVisibleImageData = mImageAdapter.getFirstVisibleImage(position);
+            if (firstVisibleImageData != null) {
+                tvAddTime.setText(getImageTime(SelectorActivity.this, firstVisibleImageData.getAddedTime()));
             }
         }
     }

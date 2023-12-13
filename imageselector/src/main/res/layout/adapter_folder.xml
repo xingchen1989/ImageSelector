@@ -9,8 +9,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="10dp"
-        android:background="@drawable/folder_bg"
-        android:paddingRight="3dp"
+        android:background="@drawable/layer_folder_cover"
+        android:paddingEnd="3dp"
         android:paddingBottom="3dp">
 
         <ImageView

@@ -13,7 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.xingchen.imageselector.R;
-import com.xingchen.imageselector.entry.Image;
+import com.xingchen.imageselector.entry.ImageData;
 import com.xingchen.imageselector.entry.RequestConfig;
 
 import java.util.ArrayList;
@@ -21,12 +21,11 @@ import java.util.ArrayList;
 public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> {
     private static final int TYPE_CAMERA = 1;
     private static final int TYPE_IMAGE = 2;
-    private ArrayList<Image> mSelectImages = new ArrayList<>(); //保存选中的图片
-    private ArrayList<Image> mTotalImages = new ArrayList<>();//数据源，包含当前显示的所有图片
-    private OnImageSelectListener mSelectListener;//图片选择监听器
-    private OnItemClickListener mItemClickListener;//Item点击监听器
-    private RequestConfig config;
-    private Context mContext;
+    private final Context mContext;
+    private final RequestConfig config;
+    private ItemActionListener mItemActionListener;//图片操作监听器
+    private ArrayList<ImageData> mTotalImages = new ArrayList<>();//图片数据源
+    private ArrayList<ImageData> mSelectImages = new ArrayList<>();//保存选中的图片
 
     public ImageAdapter(Context mContext, RequestConfig config) {
         this.mContext = mContext;
@@ -36,40 +35,21 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        ViewHolder viewHolder = null;
         LayoutInflater mInflater = LayoutInflater.from(mContext);
-        if (viewType == TYPE_IMAGE) {
-            View view = mInflater.inflate(R.layout.adapter_images_item, parent, false);
-            viewHolder = new ViewHolder(view);
-        } else if (viewType == TYPE_CAMERA) {
-            View view = mInflater.inflate(R.layout.adapter_camera_item, parent, false);
-            viewHolder = new ViewHolder(view);
+        if (viewType == TYPE_CAMERA) {
+            return new ViewHolder(mInflater.inflate(R.layout.adapter_camera_item, parent, false));
+        } else {
+            return new ViewHolder(mInflater.inflate(R.layout.adapter_images_item, parent, false));
         }
-        return viewHolder;
     }
 
     @Override
     public void onBindViewHolder(@NonNull final ViewHolder holder, int position) {
-        if (getItemViewType(position) == TYPE_IMAGE) {
-            final Image image = getImage(position);
-            Glide.with(mContext).load(image.getContentUri()).into(holder.ivImage);
-            holder.ivTypeGif.setVisibility(image.isGif() ? View.VISIBLE : View.GONE);
-            setItemSelectState(holder, mSelectImages.contains(image));
-            holder.ivSelect.setOnClickListener(v -> checkedImage(holder, image));
-            holder.itemView.setOnClickListener(v -> {
-                if (config.canPreview && mItemClickListener != null) {
-                    int adapterPosition = holder.getBindingAdapterPosition();
-                    mItemClickListener.OnItemClick(image, config.useCamera ? adapterPosition - 1 : adapterPosition);
-                } else {
-                    checkedImage(holder, image);
-                }
-            });
-        } else if (getItemViewType(position) == TYPE_CAMERA) {
-            holder.itemView.setOnClickListener(v -> {
-                if (mItemClickListener != null) {
-                    mItemClickListener.OnCameraClick();
-                }
-            });
+        if (getItemViewType(position) == TYPE_CAMERA) {
+            holder.bindCamera();
+        } else {
+            ImageData image = getImage(position);
+            holder.bindImageData(mContext, image);
         }
     }
 
@@ -87,7 +67,7 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
         }
     }
 
-    private Image getImage(int position) {
+    private ImageData getImage(int position) {
         return mTotalImages.get(config.useCamera ? position - 1 : position);
     }
 
@@ -107,11 +87,11 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
      *
      * @param image
      */
-    private void selectImage(Image image) {
+    private void selectImage(ImageData image) {
         mSelectImages.add(image);
-        if (mSelectListener != null) {
-            mSelectListener.OnImageSelect(image, true, mSelectImages.size());
-        }
+//        if (mImageSelectListener != null) {
+//            mImageSelectListener.OnImageSelect(image, true, mSelectImages.size());
+//        }
     }
 
     /**
@@ -119,24 +99,22 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
      *
      * @param image
      */
-    private void unSelectImage(Image image) {
+    private void unSelectImage(ImageData image) {
         mSelectImages.remove(image);
-        if (mSelectListener != null) {
-            mSelectListener.OnImageSelect(image, false, mSelectImages.size());
-        }
+//        if (mImageSelectListener != null) {
+//            mImageSelectListener.OnImageSelect(image, false, mSelectImages.size());
+//        }
     }
 
     /**
      * 清除当前选中的图片，并且更新视图
      */
     private void clearImageSelect() {
-        if (mTotalImages != null) {
-            for (Image image : mSelectImages) {
-                mSelectImages.remove(image);
-                int index = mTotalImages.indexOf(image);
-                int changeIndex = config.useCamera ? index + 1 : index;
-                if (index != -1) notifyItemChanged(changeIndex);
-            }
+        for (ImageData image : mSelectImages) {
+            mSelectImages.remove(image);
+            int index = mTotalImages.indexOf(image);
+            int changeIndex = config.useCamera ? index + 1 : index;
+            if (index != -1) notifyItemChanged(changeIndex);
         }
     }
 
@@ -146,7 +124,7 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
      * @param holder
      * @param image
      */
-    private void checkedImage(ViewHolder holder, Image image) {
+    private void checkedImage(ViewHolder holder, ImageData image) {
         if (mSelectImages.contains(image)) {
             //如果图片已经选中，就取消选中
             unSelectImage(image);
@@ -172,7 +150,7 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
      * @param imageList
      */
     @SuppressLint("NotifyDataSetChanged")
-    public void refresh(ArrayList<Image> imageList) {
+    public void refresh(ArrayList<ImageData> imageList) {
         mTotalImages = imageList;
         notifyDataSetChanged();
     }
@@ -180,47 +158,41 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
     /**
      * 获取第一个可见项
      *
-     * @param firstVisibleItem
+     * @param position
      * @return
      */
-    public Image getFirstVisibleImage(int firstVisibleItem) {
+    public ImageData getFirstVisibleImage(int position) {
         if (mTotalImages != null && !mTotalImages.isEmpty()) {
             if (config.useCamera) {
-                return mTotalImages.get(firstVisibleItem > 0 ? firstVisibleItem - 1 : 0);
+                return mTotalImages.get(position > 0 ? position - 1 : 0);
             } else {
-                return mTotalImages.get(firstVisibleItem);
+                return mTotalImages.get(position);
             }
         }
         return null;
     }
 
-    public ArrayList<Image> getTotalImages() {
+    public ArrayList<ImageData> getTotalImages() {
         return mTotalImages;
     }
 
-    public ArrayList<Image> getSelectImages() {
+    public ArrayList<ImageData> getSelectImages() {
         return mSelectImages;
     }
 
-    public void setSelectListener(OnImageSelectListener mSelectListener) {
-        this.mSelectListener = mSelectListener;
+    public void setItemActionListener(ItemActionListener mItemClickListener) {
+        this.mItemActionListener = mItemClickListener;
     }
 
-    public void setItemClickListener(OnItemClickListener mItemClickListener) {
-        this.mItemClickListener = mItemClickListener;
-    }
-
-    public interface OnImageSelectListener {
-        void OnImageSelect(Image image, boolean isSelect, int selectCount);
-    }
-
-    public interface OnItemClickListener {
-        void OnItemClick(Image image, int position);
-
+    public interface ItemActionListener {
         void OnCameraClick();
+
+        void OnImageClick(ImageData image, int position);
+
+        void OnImageSelect(ImageData image, int selectCount);
     }
 
-    static class ViewHolder extends RecyclerView.ViewHolder {
+    public class ViewHolder extends RecyclerView.ViewHolder {
         ImageView ivCamera;
         ImageView ivImage;
         ImageView ivSelect;
@@ -232,6 +204,41 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
             ivCamera = itemView.findViewById(R.id.iv_camera);
             ivSelect = itemView.findViewById(R.id.iv_select);
             ivTypeGif = itemView.findViewById(R.id.iv_type_gif);
+        }
+
+        private void bindCamera() {
+            itemView.setOnClickListener(v -> {
+                if (mItemActionListener != null) {
+                    mItemActionListener.OnCameraClick();
+                }
+            });
+        }
+
+        public void bindImageData(Context context, ImageData data) {
+            Glide.with(context).load(data.getContentUri()).into(ivImage);
+            ivTypeGif.setVisibility(data.isGif() ? View.VISIBLE : View.GONE);
+            ivSelect.setSelected(data.isSelected());
+            ivSelect.setOnClickListener(view -> {
+                data.setSelected(!data.isSelected());
+                if (mItemActionListener != null) {
+                    mItemActionListener.OnImageSelect(data, mSelectImages.size());
+                }
+            });
+            itemView.setOnClickListener(v -> {
+//                if(){
+//
+//                }
+            });
+//            setItemSelectState(holder, mSelectImages.contains(image));
+//            holder.ivSelect.setOnClickListener(v -> checkedImage(holder, image));
+//            holder.itemView.setOnClickListener(v -> {
+//                if (config.canPreview && mItemClickListener != null) {
+//                    int adapterPosition = holder.getBindingAdapterPosition();
+//                    mItemClickListener.OnItemClick(image, config.useCamera ? adapterPosition - 1 : adapterPosition);
+//                } else {
+//                    checkedImage(holder, image);
+//                }
+//            });
         }
     }
 }

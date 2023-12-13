@@ -1,19 +1,14 @@
 package com.xingchen.imageselector.model;
 
-import android.Manifest;
 import android.content.ContentUris;
 import android.content.Context;
-import android.content.pm.PackageManager;
-import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.text.TextUtils;
 
-import androidx.core.content.ContextCompat;
-
 import com.xingchen.imageselector.R;
-import com.xingchen.imageselector.entry.Image;
+import com.xingchen.imageselector.entry.ImageData;
 import com.xingchen.imageselector.entry.ImageFolder;
 
 import java.io.File;
@@ -21,19 +16,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ImageModel {
-    private static ImageModel mInstance;
+    private static ImageModel mInstance = new ImageModel();
 
     public interface DataCallback {
         void onSuccess(ArrayList<ImageFolder> imageFolders);
     }
 
-    public static ImageModel getInstance() {
+    public static synchronized ImageModel getInstance() {
         if (mInstance == null) {
-            synchronized (ImageModel.class) {
-                if (mInstance == null) {
-                    mInstance = new ImageModel();
-                }
-            }
+            mInstance = new ImageModel();
         }
         return mInstance;
     }
@@ -42,18 +33,12 @@ public class ImageModel {
      * 异步加载图片
      *
      * @param context
-     * @param isPreLoad
      * @param callback
      */
-    public void asyncLoadImage(final Context context, final DataCallback callback) {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                synchronized (ImageModel.class) {
-                    if (callback != null) {
-                        callback.onSuccess(splitFolder(context, scanImages(context)));
-                    }
-                }
+    public void asyncLoadImage(Context context, DataCallback callback) {
+        new Thread(() -> {
+            if (callback != null) {
+                callback.onSuccess(splitFolder(context, scanImages(context)));
             }
         }).start();
     }
@@ -63,8 +48,8 @@ public class ImageModel {
      *
      * @return
      */
-    private ArrayList<Image> scanImages(Context context) {
-        ArrayList<Image> images = new ArrayList<>();
+    private ArrayList<ImageData> scanImages(Context context) {
+        ArrayList<ImageData> images = new ArrayList<>();
         Cursor mCursor = context.getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, new String[]{
                         MediaStore.Images.Media._ID,
                         MediaStore.Images.Media.DATA,
@@ -89,7 +74,8 @@ public class ImageModel {
                 //获取图片uri
                 Uri uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
 //                Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI.buildUpon().appendPath(String.valueOf(id)).build();
-                if (checkImageValid(path)) images.add(new Image(time, mimeType, name, path, uri));
+                if (checkImageValid(path))
+                    images.add(new ImageData(time, mimeType, name, path, uri));
             }
             mCursor.close();
         }
@@ -132,7 +118,7 @@ public class ImageModel {
      * @param folders
      * @return
      */
-    private ImageFolder getFolder(Image image, List<ImageFolder> folders) {
+    private ImageFolder getFolder(ImageData image, List<ImageFolder> folders) {
         String name = getFolderName(image.getPath());
         for (ImageFolder folder : folders) {
             if (name.equals(folder.getFolderName())) {
@@ -150,10 +136,10 @@ public class ImageModel {
      * @param images
      * @return
      */
-    private ArrayList<ImageFolder> splitFolder(Context context, ArrayList<Image> images) {
+    private ArrayList<ImageFolder> splitFolder(Context context, ArrayList<ImageData> images) {
         ArrayList<ImageFolder> folders = new ArrayList<>();
         folders.add(new ImageFolder(context.getString(R.string.selector_all_image), images));
-        for (Image image : images) {
+        for (ImageData image : images) {
             ImageFolder folder = getFolder(image, folders);
             folder.addImage(image);
         }

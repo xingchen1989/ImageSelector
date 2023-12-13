@@ -17,7 +17,7 @@ import androidx.viewpager.widget.ViewPager;
 import com.xingchen.imageselector.R;
 import com.xingchen.imageselector.adapter.FixExceptionViewPager;
 import com.xingchen.imageselector.adapter.ImagePagerAdapter;
-import com.xingchen.imageselector.entry.Image;
+import com.xingchen.imageselector.entry.ImageData;
 import com.xingchen.imageselector.entry.RequestConfig;
 import com.xingchen.imageselector.utils.ImageSelector;
 import com.xingchen.imageselector.utils.VersionUtils;
@@ -34,10 +34,10 @@ public class PreviewActivity extends AppCompatActivity {
 
     private int position;//初始位置
     private RequestConfig config;//图片浏览器的配置信息
-    private static ArrayList<Image> mSelectImages;//当前已经选中的图片
-    private static ArrayList<Image> mTotalImages;//当前所有可显示的图片
+    private static ArrayList<ImageData> mSelectImages;//当前已经选中的图片
+    private static ArrayList<ImageData> mTotalImages;//当前所有可显示的图片
 
-    public static void openActivity(Activity activity, int requestCode, int position, RequestConfig config, ArrayList<Image> selectImages, ArrayList<Image> totalImages) {
+    public static void openActivity(Activity activity, int requestCode, int position, RequestConfig config, ArrayList<ImageData> selectImages, ArrayList<ImageData> totalImages) {
         mSelectImages = selectImages;
         mTotalImages = totalImages;
         Intent intent = new Intent(activity, PreviewActivity.class);
@@ -168,7 +168,7 @@ public class PreviewActivity extends AppCompatActivity {
     private void clickSelect() {
         int position = viewPager.getCurrentItem();
         if (mTotalImages != null && mTotalImages.size() > position) {
-            Image image = mTotalImages.get(position);
+            ImageData image = mTotalImages.get(position);
             if (mSelectImages.contains(image)) {
                 mSelectImages.remove(image);
             } else if (config.isSingle) {

@@ -8,13 +8,13 @@ import java.util.ArrayList;
 public class ImageFolder {
     private boolean enableCamera; // 是否可以调用相机拍照，只有“全部”文件夹才可以拍照。
     private String folderName;// 文件夹名称
-    private ArrayList<Image> imageList;// 文件夹包含的图片
+    private ArrayList<ImageData> imageList;// 文件夹包含的图片
 
     public ImageFolder(String folderName) {
         this.folderName = folderName;
     }
 
-    public ImageFolder(String folderName, ArrayList<Image> imageList) {
+    public ImageFolder(String folderName, ArrayList<ImageData> imageList) {
         this.folderName = folderName;
         this.imageList = imageList;
     }
@@ -35,14 +35,14 @@ public class ImageFolder {
         this.folderName = folderName == null ? "" : folderName;
     }
 
-    public ArrayList<Image> getImageList() {
+    public ArrayList<ImageData> getImageList() {
         if (imageList == null) {
             return new ArrayList<>();
         }
         return imageList;
     }
 
-    public void setImageList(ArrayList<Image> imageList) {
+    public void setImageList(ArrayList<ImageData> imageList) {
         this.imageList = imageList;
     }
 
@@ -51,7 +51,7 @@ public class ImageFolder {
      *
      * @param image
      */
-    public void addImage(Image image) {
+    public void addImage(ImageData image) {
         if (image != null) {
             if (imageList == null) {
                 imageList = new ArrayList<>();
