@@ -23,6 +23,7 @@ import com.xingchen.imageselector.utils.VersionUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.UUID;
 
@@ -47,7 +48,7 @@ public class ClipImageActivity extends AppCompatActivity {
      * @param activity
      * @param config
      */
-    public static void openActivity(Activity activity, int requestCode, RequestConfig config) {
+    public static void openActivity(Activity activity, RequestConfig config, int requestCode) {
         Intent intent = new Intent(activity, ClipImageActivity.class);
         intent.putExtra(ImageSelector.KEY_CONFIG, config);
         activity.startActivityForResult(intent, requestCode);
@@ -59,7 +60,7 @@ public class ClipImageActivity extends AppCompatActivity {
      * @param fragment
      * @param config
      */
-    public static void openActivity(Fragment fragment, int requestCode, RequestConfig config) {
+    public static void openActivity(Fragment fragment, RequestConfig config, int requestCode) {
         Intent intent = new Intent(fragment.getActivity(), ClipImageActivity.class);
         intent.putExtra(ImageSelector.KEY_CONFIG, config);
         fragment.startActivityForResult(intent, requestCode);
@@ -83,8 +84,8 @@ public class ClipImageActivity extends AppCompatActivity {
         ivBack = findViewById(R.id.iv_back);
         tvCrop = findViewById(R.id.tv_crop);
         cropImageView = findViewById(R.id.cropImageView);
-        RequestConfig config = getIntent().getParcelableExtra(ImageSelector.KEY_CONFIG);
-        SelectorActivity.openActivity(this, ImageSelector.SELECTOR_REQUEST_CODE, config);
+        Serializable config = getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
+        SelectorActivity.openActivity(this, config, ImageSelector.SELECTOR_REQUEST_CODE);
     }
 
     private void initListener() {

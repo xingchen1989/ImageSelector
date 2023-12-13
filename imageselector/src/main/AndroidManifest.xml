@@ -4,14 +4,17 @@
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-
     <uses-permission android:name="android.permission.CAMERA" />
 
     <application>
         <activity
+            android:name=".activity.PermissionActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+        <activity
             android:name=".activity.ClipImageActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar"></activity>
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
         <activity
             android:name=".activity.PreviewActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"
@@ -22,7 +25,7 @@
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
 
         <provider
-            android:name=".provider.ImageSelectorProvider"
+            android:name=".provider.ImageProvider"
             android:authorities="${applicationId}.imageSelectorProvider"
             android:exported="false"
             android:grantUriPermissions="true">

@@ -7,6 +7,6 @@ import androidx.core.content.FileProvider;
  * @Description
  * @Date 2019/9/12
  */
-public class ImageSelectorProvider extends FileProvider {
+public class ImageProvider extends FileProvider {
 
 }

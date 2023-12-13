@@ -1,5 +1,6 @@
 package com.xingchen.imageselector.adapter;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,13 +21,12 @@ import java.util.ArrayList;
 public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> {
     private static final int TYPE_CAMERA = 1;
     private static final int TYPE_IMAGE = 2;
-
-    private Context mContext;
-    private RequestConfig config;
     private ArrayList<Image> mSelectImages = new ArrayList<>(); //保存选中的图片
     private ArrayList<Image> mTotalImages = new ArrayList<>();//数据源，包含当前显示的所有图片
     private OnImageSelectListener mSelectListener;//图片选择监听器
     private OnItemClickListener mItemClickListener;//Item点击监听器
+    private RequestConfig config;
+    private Context mContext;
 
     public ImageAdapter(Context mContext, RequestConfig config) {
         this.mContext = mContext;
@@ -53,35 +53,21 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
         if (getItemViewType(position) == TYPE_IMAGE) {
             final Image image = getImage(position);
             Glide.with(mContext).load(image.getContentUri()).into(holder.ivImage);
-            holder.ivGif.setVisibility(image.isGif() ? View.VISIBLE : View.GONE);
+            holder.ivTypeGif.setVisibility(image.isGif() ? View.VISIBLE : View.GONE);
             setItemSelectState(holder, mSelectImages.contains(image));
-
-            //点击选中/取消选中图片
-            holder.ivSelect.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
+            holder.ivSelect.setOnClickListener(v -> checkedImage(holder, image));
+            holder.itemView.setOnClickListener(v -> {
+                if (config.canPreview && mItemClickListener != null) {
+                    int adapterPosition = holder.getBindingAdapterPosition();
+                    mItemClickListener.OnItemClick(image, config.useCamera ? adapterPosition - 1 : adapterPosition);
+                } else {
                     checkedImage(holder, image);
                 }
             });
-
-            holder.itemView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (config.canPreview && mItemClickListener != null) {
-                        mItemClickListener.OnItemClick(image, config.enableCamera ?
-                                holder.getAdapterPosition() - 1 : holder.getAdapterPosition());
-                    } else {
-                        checkedImage(holder, image);
-                    }
-                }
-            });
         } else if (getItemViewType(position) == TYPE_CAMERA) {
-            holder.itemView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (mItemClickListener != null) {
-                        mItemClickListener.OnCameraClick();
-                    }
+            holder.itemView.setOnClickListener(v -> {
+                if (mItemClickListener != null) {
+                    mItemClickListener.OnCameraClick();
                 }
             });
         }
@@ -89,12 +75,12 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
 
     @Override
     public int getItemCount() {
-        return config.enableCamera ? mTotalImages.size() + 1 : mTotalImages.size();
+        return config.useCamera ? mTotalImages.size() + 1 : mTotalImages.size();
     }
 
     @Override
     public int getItemViewType(int position) {
-        if (config.enableCamera && position == 0) {
+        if (config.useCamera && position == 0) {
             return TYPE_CAMERA;
         } else {
             return TYPE_IMAGE;
@@ -102,7 +88,7 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
     }
 
     private Image getImage(int position) {
-        return mTotalImages.get(config.enableCamera ? position - 1 : position);
+        return mTotalImages.get(config.useCamera ? position - 1 : position);
     }
 
     /**
@@ -111,10 +97,8 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
     private void setItemSelectState(ViewHolder holder, boolean isSelect) {
         if (isSelect) {
             holder.ivSelect.setImageResource(R.drawable.icon_image_select);
-            holder.ivMasking.setAlpha(0.5f);
         } else {
             holder.ivSelect.setImageResource(R.drawable.icon_image_un_select);
-            holder.ivMasking.setAlpha(0.2f);
         }
     }
 
@@ -150,9 +134,8 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
             for (Image image : mSelectImages) {
                 mSelectImages.remove(image);
                 int index = mTotalImages.indexOf(image);
-                if (index != -1) {
-                    notifyItemChanged(config.enableCamera ? index + 1 : index);
-                }
+                int changeIndex = config.useCamera ? index + 1 : index;
+                if (index != -1) notifyItemChanged(changeIndex);
             }
         }
     }
@@ -173,13 +156,13 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
             clearImageSelect();
             selectImage(image);
             setItemSelectState(holder, true);
-        } else if (config.maxSelectCount <= 0 || mSelectImages.size() < config.maxSelectCount) {
+        } else if (config.maxCount <= 0 || mSelectImages.size() < config.maxCount) {
             //如果不限制图片的选中数量，或者图片的选中数量还没有达到最大限制，就直接选中当前图片。
             selectImage(image);
             setItemSelectState(holder, true);
         } else {
             //图片选择数量达到最大张数时提示用户
-            Toast.makeText(mContext, String.format("您最多只能选择%1$s张照片", config.maxSelectCount), Toast.LENGTH_SHORT).show();
+            Toast.makeText(mContext, String.format("您最多只能选择%1$s张照片", config.maxCount), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -188,6 +171,7 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
      *
      * @param imageList
      */
+    @SuppressLint("NotifyDataSetChanged")
     public void refresh(ArrayList<Image> imageList) {
         mTotalImages = imageList;
         notifyDataSetChanged();
@@ -201,7 +185,7 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
      */
     public Image getFirstVisibleImage(int firstVisibleItem) {
         if (mTotalImages != null && !mTotalImages.isEmpty()) {
-            if (config.enableCamera) {
+            if (config.useCamera) {
                 return mTotalImages.get(firstVisibleItem > 0 ? firstVisibleItem - 1 : 0);
             } else {
                 return mTotalImages.get(firstVisibleItem);
@@ -239,17 +223,15 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
     static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView ivCamera;
         ImageView ivImage;
-        ImageView ivMasking;
         ImageView ivSelect;
-        ImageView ivGif;
+        ImageView ivTypeGif;
 
         public ViewHolder(View itemView) {
             super(itemView);
-            ivCamera = itemView.findViewById(R.id.iv_camera);
             ivImage = itemView.findViewById(R.id.iv_image);
+            ivCamera = itemView.findViewById(R.id.iv_camera);
             ivSelect = itemView.findViewById(R.id.iv_select);
-            ivMasking = itemView.findViewById(R.id.iv_masking);
-            ivGif = itemView.findViewById(R.id.iv_gif);
+            ivTypeGif = itemView.findViewById(R.id.iv_type_gif);
         }
     }
 }

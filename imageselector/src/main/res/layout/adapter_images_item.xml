@@ -13,28 +13,19 @@
         android:background="#010101"
         android:scaleType="centerCrop" />
 
-    <com.xingchen.imageselector.view.SquareImageView
-        android:id="@+id/iv_masking"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:background="#111212" />
-
     <ImageView
         android:id="@+id/iv_select"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="end"
         android:paddingStart="10dp"
-        android:paddingLeft="10dp"
         android:paddingTop="8dp"
         android:paddingEnd="8dp"
-        android:paddingRight="8dp"
         android:paddingBottom="10dp"
         android:src="@drawable/icon_image_un_select" />
 
     <ImageView
-        android:id="@+id/iv_gif"
+        android:id="@+id/iv_type_gif"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="end|bottom"

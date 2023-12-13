@@ -4,7 +4,6 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/shape_solid_white_8"
-    android:orientation="vertical"
     android:paddingStart="15sp"
     android:paddingTop="20dp"
     android:paddingEnd="15dp"

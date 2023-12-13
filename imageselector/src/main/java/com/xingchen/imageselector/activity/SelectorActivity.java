@@ -1,78 +1,70 @@
 package com.xingchen.imageselector.activity;
 
-import android.Manifest;
+import static com.xingchen.imageselector.utils.DateTimeUtils.getImageTime;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
+import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.ContentValues;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
-import android.provider.Settings;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AbsListView;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
 import androidx.core.content.FileProvider;
-import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.recyclerview.widget.SimpleItemAnimator;
 
 import com.xingchen.imageselector.R;
 import com.xingchen.imageselector.adapter.FolderAdapter;
 import com.xingchen.imageselector.adapter.ImageAdapter;
-import com.xingchen.imageselector.dialog.PermissionCameraDialog;
-import com.xingchen.imageselector.dialog.PermissionExternalDialog;
 import com.xingchen.imageselector.entry.Image;
 import com.xingchen.imageselector.entry.ImageFolder;
 import com.xingchen.imageselector.entry.RequestConfig;
 import com.xingchen.imageselector.model.ImageModel;
-import com.xingchen.imageselector.utils.DateUtils;
+import com.xingchen.imageselector.utils.ActionType;
 import com.xingchen.imageselector.utils.ImageSelector;
 import com.xingchen.imageselector.utils.VersionUtils;
 
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Objects;
 
 public class SelectorActivity extends AppCompatActivity {
-    private static final int CAMERA_REQUEST_CODE = 0x00000011;
-    private static final int READ_EXTERNAL_REQUEST_CODE = 0x00000012;
-    private View viewMask;
-    private TextView tvTime;
+    private View contentMask;
+    private TextView tvAddTime;
     private TextView tvConfirm;
     private TextView tvFolder;
     private TextView tvPreview;
     private ImageView ivBack;
     private FrameLayout btnConfirm;
     private FrameLayout btnPreview;
-    private RelativeLayout btnFolder;
     private RecyclerView rvImage;
     private RecyclerView rvFolder;
     private ImageAdapter mImageAdapter;
@@ -80,9 +72,8 @@ public class SelectorActivity extends AppCompatActivity {
     private Runnable mHideRunnable;
     private Handler mHideHandler;
     private RequestConfig config;
-    private boolean isFolderOpen;
     private Uri mCameraUri;
-    private DialogFragment dialogFragment;
+    private boolean isFolderOpen;
 
     /**
      * 启动图片选择器
@@ -90,7 +81,7 @@ public class SelectorActivity extends AppCompatActivity {
      * @param activity
      * @param config
      */
-    public static void openActivity(Activity activity, int requestCode, RequestConfig config) {
+    public static void openActivity(Activity activity, Serializable config, int requestCode) {
         Intent intent = new Intent(activity, SelectorActivity.class);
         intent.putExtra(ImageSelector.KEY_CONFIG, config);
         activity.startActivityForResult(intent, requestCode);
@@ -102,7 +93,7 @@ public class SelectorActivity extends AppCompatActivity {
      * @param fragment
      * @param config
      */
-    public static void openActivity(Fragment fragment, int requestCode, RequestConfig config) {
+    public static void openActivity(Fragment fragment, Serializable config, int requestCode) {
         Intent intent = new Intent(fragment.getActivity(), SelectorActivity.class);
         intent.putExtra(ImageSelector.KEY_CONFIG, config);
         fragment.startActivityForResult(intent, requestCode);
@@ -115,12 +106,14 @@ public class SelectorActivity extends AppCompatActivity {
         setStatusBarColor();//设置状态栏颜色
         initData();//初始化数据
         initView();//初始化视图
+        initLogic();//初始化逻辑
         initListener();//初始化监听事件
         initImageList();//初始化图片列表
         initFolderList();//初始化文件夹列表
-        setSelectImageCount(0);
+        setSelectCount(0);//初始化选中的数量为0
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     @Override
     public void onConfigurationChanged(@NonNull Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
@@ -135,26 +128,7 @@ public class SelectorActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == READ_EXTERNAL_REQUEST_CODE) {
-            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                if (dialogFragment != null) dialogFragment.dismiss();
-                loadImageAndUpdateView();//允许权限，加载图片。
-            } else {
-                showExceptionDialog();//拒绝权限，弹出提示框。
-            }
-        } else if (requestCode == CAMERA_REQUEST_CODE) {
-            if (grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
-                if (dialogFragment != null) dialogFragment.dismiss();
-                mCameraUri = openCamera();//允许权限，有调起相机拍照。
-            } else {
-                showExceptionDialog();//拒绝权限，弹出提示框。
-            }
-        }
-    }
-
+    @SuppressLint("NotifyDataSetChanged")
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -165,7 +139,7 @@ public class SelectorActivity extends AppCompatActivity {
             } else {
                 //否则，就刷新当前页面。
                 mImageAdapter.notifyDataSetChanged();
-                setSelectImageCount(mImageAdapter.getSelectImages().size());
+                setSelectCount(mImageAdapter.getSelectImages().size());
             }
         } else if (requestCode == ImageSelector.CAMERA_REQUEST_CODE) {
             if (resultCode == RESULT_OK) {
@@ -173,7 +147,7 @@ public class SelectorActivity extends AppCompatActivity {
                 addPictureToAlbum(mCameraUri);
                 imageContentUris.add(mCameraUri);
                 saveImageAndFinish(imageContentUris, true);
-            } else if (config.onlyTakePhoto) finish();
+            } else if (config.actionType == ActionType.TAKE_PHOTO) finish();
         }
     }
 
@@ -181,16 +155,9 @@ public class SelectorActivity extends AppCompatActivity {
      * 初始化数据
      */
     private void initData() {
-        config = getIntent().getParcelableExtra(ImageSelector.KEY_CONFIG);
-        mHideHandler = new Handler();
-        mHideRunnable = new Runnable() {
-            @Override
-            public void run() {
-                if (tvTime.getAlpha() == 1) {
-                    ObjectAnimator.ofFloat(tvTime, "alpha", 1, 0).setDuration(300).start();
-                }
-            }
-        };
+        config = (RequestConfig) getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
+        mHideHandler = new Handler(Looper.myLooper());
+        mHideRunnable = () -> ObjectAnimator.ofFloat(tvAddTime, "alpha", 1, 0).start();
     }
 
     /**
@@ -201,113 +168,47 @@ public class SelectorActivity extends AppCompatActivity {
         rvImage = findViewById(R.id.rv_image);
         rvFolder = findViewById(R.id.rv_folder);
         tvFolder = findViewById(R.id.tv_folder);
-        tvTime = findViewById(R.id.tv_time);
+        tvAddTime = findViewById(R.id.tv_time);
         tvPreview = findViewById(R.id.tv_preview);
         tvConfirm = findViewById(R.id.tv_confirm);
         btnConfirm = findViewById(R.id.btn_confirm);
         btnPreview = findViewById(R.id.btn_preview);
-        btnFolder = findViewById(R.id.btn_folder);
-        viewMask = findViewById(R.id.view_mask);
-        if (config.onlyTakePhoto) checkPermissionAndCamera();
-        else checkPermissionAndLoad();
+        contentMask = findViewById(R.id.view_mask);
+    }
+
+    /**
+     * 初始化逻辑
+     */
+    private void initLogic() {
+        if (config.actionType == ActionType.TAKE_PHOTO) {
+            openDeviceCamera();
+        } else if (config.actionType == ActionType.PICK_VIDEO) {
+            openVideoFiles();
+        } else {
+            listImageFiles();
+        }
     }
 
     /**
      * 初始化监听事件
      */
     private void initListener() {
-        ivBack.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
-        viewMask.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                closeFolder();
-            }
-        });
-        btnConfirm.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                confirmSelect();
-            }
-        });
-        btnPreview.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                ArrayList<Image> totalImages = new ArrayList<Image>(mImageAdapter.getSelectImages());
-                PreviewActivity.openActivity(SelectorActivity.this, ImageSelector.SELECTOR_REQUEST_CODE,
-                        0, config, mImageAdapter.getSelectImages(), totalImages);
-            }
-        });
-        btnFolder.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (isFolderOpen) closeFolder();
-                else openFolder();
-            }
-        });
-        rvImage.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
-                switch (newState) {
-                    case AbsListView.OnScrollListener.SCROLL_STATE_TOUCH_SCROLL:
-                        // 手指触屏拉动准备滚动，只触发一次        顺序: 1
-                        mHideHandler.removeCallbacks(mHideRunnable);
-                        break;
-                    case AbsListView.OnScrollListener.SCROLL_STATE_FLING:
-                        // 持续滚动开始，只触发一次                顺序: 2
-                        break;
-                    case AbsListView.OnScrollListener.SCROLL_STATE_IDLE:
-                        // 整个滚动事件结束，只触发一次            顺序: 4
-                        mHideHandler.postDelayed(mHideRunnable, 1500);
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            @Override
-            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-                super.onScrolled(recyclerView, dx, dy);
-                changeTime();
-            }
-        });
+        ivBack.setOnClickListener(v -> finish());
+        contentMask.setOnClickListener(v -> closeFolder());
+        btnPreview.setOnClickListener(v -> previewImage());
+        btnConfirm.setOnClickListener(v -> confirmSelect());
+        tvFolder.setOnClickListener(v -> animationFolder());
+        rvImage.addOnScrollListener(new MyScrollListener());
     }
 
     /**
      * 初始化图片列表
      */
     private void initImageList() {
-        SimpleItemAnimator simpleItemAnimator = (SimpleItemAnimator) rvImage.getItemAnimator();
-        if (simpleItemAnimator != null) {//解决notifyItemChanged()闪烁
-            simpleItemAnimator.setSupportsChangeAnimations(false);
-        }
-        Configuration configuration = getResources().getConfiguration();// 判断屏幕方向
-        GridLayoutManager mLayoutManager = (configuration.orientation == Configuration.ORIENTATION_PORTRAIT) ?
-                new GridLayoutManager(this, 3) : new GridLayoutManager(this, 5);
+        GridLayoutManager mLayoutManager = new GridLayoutManager(this, 3);
         mImageAdapter = new ImageAdapter(this, config);
-        mImageAdapter.setSelectListener(new ImageAdapter.OnImageSelectListener() {
-            @Override
-            public void OnImageSelect(Image image, boolean isSelect, int selectCount) {
-                setSelectImageCount(selectCount);
-            }
-        });
-        mImageAdapter.setItemClickListener(new ImageAdapter.OnItemClickListener() {
-            @Override
-            public void OnItemClick(Image image, int position) {
-                PreviewActivity.openActivity(SelectorActivity.this, ImageSelector.SELECTOR_REQUEST_CODE,
-                        position, config, mImageAdapter.getSelectImages(), mImageAdapter.getTotalImages());
-            }
-
-            @Override
-            public void OnCameraClick() {
-                checkPermissionAndCamera();
-            }
-        });
+        mImageAdapter.setSelectListener((image, isSelect, selectCount) -> setSelectCount(selectCount));
+        mImageAdapter.setItemClickListener(new MyItemClickListener());
         rvImage.setLayoutManager(mLayoutManager);
         rvImage.setAdapter(mImageAdapter);
     }
@@ -318,12 +219,9 @@ public class SelectorActivity extends AppCompatActivity {
     private void initFolderList() {
         rvFolder.setLayoutManager(new LinearLayoutManager(SelectorActivity.this));
         mFolderAdapter = new FolderAdapter(SelectorActivity.this);
-        mFolderAdapter.setOnFolderSelectListener(new FolderAdapter.OnFolderSelectListener() {
-            @Override
-            public void OnFolderSelect(ImageFolder folder) {
-                refreshImages(folder);
-                closeFolder();
-            }
+        mFolderAdapter.setOnFolderSelectListener(folder -> {
+            refreshImages(folder);
+            closeFolder();
         });
         rvFolder.setAdapter(mFolderAdapter);
     }
@@ -348,10 +246,6 @@ public class SelectorActivity extends AppCompatActivity {
         if (folder != null) {
             tvFolder.setText(folder.getFolderName());
             mImageAdapter.refresh(folder.getImageList());
-            if (tvTime.getAlpha() == 0) {
-                mHideHandler.postDelayed(mHideRunnable, 1500);
-                ObjectAnimator.ofFloat(tvTime, "alpha", 0, 1).setDuration(300).start();
-            }
         }
     }
 
@@ -360,8 +254,8 @@ public class SelectorActivity extends AppCompatActivity {
      */
     private void openFolder() {
         isFolderOpen = true;
-        viewMask.setVisibility(View.VISIBLE);
-        ObjectAnimator animator = ObjectAnimator.ofFloat(rvFolder, "translationY", rvFolder.getHeight(), 0).setDuration(300);
+        contentMask.setVisibility(View.VISIBLE);
+        ObjectAnimator animator = ObjectAnimator.ofFloat(rvFolder, "translationY", rvFolder.getHeight(), 0);
         animator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationStart(Animator animation) {
@@ -377,8 +271,8 @@ public class SelectorActivity extends AppCompatActivity {
      */
     private void closeFolder() {
         isFolderOpen = false;
-        viewMask.setVisibility(View.INVISIBLE);
-        ObjectAnimator animator = ObjectAnimator.ofFloat(rvFolder, "translationY", 0, rvFolder.getHeight()).setDuration(300);
+        contentMask.setVisibility(View.INVISIBLE);
+        ObjectAnimator animator = ObjectAnimator.ofFloat(rvFolder, "translationY", 0, rvFolder.getHeight());
         animator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
@@ -387,6 +281,14 @@ public class SelectorActivity extends AppCompatActivity {
             }
         });
         animator.start();
+    }
+
+    /**
+     * 收折目录列表
+     */
+    private void animationFolder() {
+        if (isFolderOpen) closeFolder();
+        else openFolder();
     }
 
     /**
@@ -403,7 +305,7 @@ public class SelectorActivity extends AppCompatActivity {
      *
      * @param count
      */
-    private void setSelectImageCount(int count) {
+    private void setSelectCount(int count) {
         if (count == 0) {
             btnConfirm.setEnabled(false);
             btnPreview.setEnabled(false);
@@ -415,12 +317,21 @@ public class SelectorActivity extends AppCompatActivity {
             tvPreview.setText(String.format(getString(R.string.selector_preview) + "(%1$s)", count));
             if (config.isSingle) {
                 tvConfirm.setText(R.string.selector_send);
-            } else if (config.maxSelectCount > 0) {
-                tvConfirm.setText(String.format(getString(R.string.selector_send) + "(%1$s/%2$s)", count, config.maxSelectCount));
+            } else if (config.maxCount > 0) {
+                tvConfirm.setText(String.format(getString(R.string.selector_send) + "(%1$s/%2$s)", count, config.maxCount));
             } else {
                 tvConfirm.setText(String.format(getString(R.string.selector_send) + "(%1$s)", count));
             }
         }
+    }
+
+    /**
+     * 预览所选图片
+     */
+    private void previewImage() {
+        ArrayList<Image> totalImages = new ArrayList<>(mImageAdapter.getSelectImages());
+        PreviewActivity.openActivity(this, ImageSelector.SELECTOR_REQUEST_CODE,
+                0, config, mImageAdapter.getSelectImages(), totalImages);
     }
 
     /**
@@ -451,43 +362,11 @@ public class SelectorActivity extends AppCompatActivity {
     /**
      * 加载图片并且更新视图
      */
-    private void loadImageAndUpdateView() {
-        ImageModel.getInstance().asyncLoadImage(this, new ImageModel.DataCallback() {
-            @Override
-            public void onSuccess(final ArrayList<ImageFolder> imageFolders) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        refreshImages(imageFolders.get(0));
-                        refreshFolders(imageFolders);
-                    }
-                });
-            }
-        });
-    }
-
-    /**
-     * 改变时间条显示的时间（显示图片列表中的第一个可见图片的时间）
-     */
-    private void changeTime() {
-        GridLayoutManager layoutManager = (GridLayoutManager) rvImage.getLayoutManager();
-        if (layoutManager != null) {
-            Image image = mImageAdapter.getFirstVisibleImage(layoutManager.findFirstVisibleItemPosition());
-            if (image != null) {
-                String time = DateUtils.getImageTime(this, image.getAddedTime());
-                tvTime.setText(time);
-            }
-        }
-    }
-
-    /**
-     * 判断SDCard是否存在
-     *
-     * @return
-     */
-    private boolean isSDCardExists() {
-        return Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED) ||
-                !Environment.isExternalStorageRemovable();
+    private void listImageFiles() {
+        ImageModel.getInstance().asyncLoadImage(this, imageFolders -> runOnUiThread(() -> {
+            refreshImages(imageFolders.get(0));
+            refreshFolders(imageFolders);
+        }));
     }
 
     /**
@@ -496,13 +375,26 @@ public class SelectorActivity extends AppCompatActivity {
      * @return
      */
     private File createImageFile() {
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-        String imageFileName = String.format("JPEG_%s.jpg", timeStamp);
-        if (isSDCardExists() && getExternalCacheDir() != null) {
-            return new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), imageFileName);
-        } else {
-            return new File(getFilesDir(), imageFileName);
-        }
+        return new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), createImageName());
+    }
+
+    /**
+     * 创建图片名称
+     *
+     * @return
+     */
+    private String createImageName() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
+        return String.format("JPEG_%s.jpg", dateFormat.format(new Date()));
+    }
+
+    /**
+     * 打开视频列表
+     */
+    private void openVideoFiles() {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
+        //intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+        startActivityForResult(intent, ImageSelector.VIDEO_REQUEST_CODE);
     }
 
     /**
@@ -510,7 +402,7 @@ public class SelectorActivity extends AppCompatActivity {
      *
      * @return
      */
-    private Uri openCamera() {
+    private void openDeviceCamera() {
         try {
             Uri imageUri = null;
             File photoFile = createImageFile();
@@ -533,67 +425,9 @@ public class SelectorActivity extends AppCompatActivity {
             }
             intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
             startActivityForResult(intent, ImageSelector.CAMERA_REQUEST_CODE);
-            return imageUri;
+            mCameraUri = imageUri;
         } catch (Exception e) {
-            return null;
-        }
-    }
-
-    /**
-     * 发生没有权限等异常时，显示一个提示dialog.
-     */
-    private void showExceptionDialog() {
-        new AlertDialog.Builder(this)
-                .setCancelable(false)
-                .setTitle(R.string.selector_hint)
-                .setMessage(R.string.selector_permissions_hint)
-                .setNegativeButton(R.string.selector_cancel, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.cancel();
-                        finish();
-                    }
-                }).setPositiveButton(R.string.selector_confirm, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.cancel();
-                        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getPackageName()));
-                        startActivity(intent);
-                    }
-                }).show();
-    }
-
-    /**
-     * 检查权限并加载SD卡里的图片。
-     */
-    private void checkPermissionAndLoad() {
-        int hasReadPermission = ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
-        if (hasReadPermission == PackageManager.PERMISSION_GRANTED) {//有权限，加载图片。
-            loadImageAndUpdateView();
-        } else {//没有权限，申请权限。
-            String[] permissions = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE};
-            ActivityCompat.requestPermissions(this, permissions, READ_EXTERNAL_REQUEST_CODE);
-            dialogFragment = new PermissionExternalDialog();
-            dialogFragment.show(getSupportFragmentManager(), "PermissionExternalDialog");
-        }
-    }
-
-    /**
-     * 检查相机权限并打开相机
-     * 因为同时要保存到相册，所以一同申请写权限
-     */
-    private void checkPermissionAndCamera() {
-        int hasCameraPermission = ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
-        int hasWritePermission = ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        if (hasCameraPermission == PackageManager.PERMISSION_GRANTED && hasWritePermission == PackageManager.PERMISSION_GRANTED) {
-            //有调起相机拍照。
-            mCameraUri = openCamera();
-        } else {
-            //没有权限，申请权限。
-            String[] permissions = new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE};
-            ActivityCompat.requestPermissions(this, permissions, CAMERA_REQUEST_CODE);
-            dialogFragment = new PermissionCameraDialog();
-            dialogFragment.show(getSupportFragmentManager(), "PermissionCameraDialog");
+            e.printStackTrace();
         }
     }
 
@@ -604,10 +438,9 @@ public class SelectorActivity extends AppCompatActivity {
      */
     private void addPictureToAlbum(Uri inputUri) {
         //创建ContentValues对象，准备插入数据
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
         ContentValues contentValues = new ContentValues();
         contentValues.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
-        contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, String.format("JPEG_%s.jpg", timeStamp));
+        contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, createImageName());
         //插入数据，返回所插入数据对应的Uri
         Uri outUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
         if (outUri != null) {
@@ -622,6 +455,53 @@ public class SelectorActivity extends AppCompatActivity {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
+            }
+        }
+    }
+
+    private class MyItemClickListener implements ImageAdapter.OnItemClickListener {
+        @Override
+        public void OnItemClick(Image image, int position) {
+            PreviewActivity.openActivity(SelectorActivity.this, ImageSelector.SELECTOR_REQUEST_CODE,
+                    position, config, mImageAdapter.getSelectImages(), mImageAdapter.getTotalImages());
+        }
+
+        @Override
+        public void OnCameraClick() {
+
+        }
+    }
+
+    private class MyScrollListener extends RecyclerView.OnScrollListener {
+        @Override
+        public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+            super.onScrollStateChanged(recyclerView, newState);
+            switch (newState) {
+                case AbsListView.OnScrollListener.SCROLL_STATE_TOUCH_SCROLL:
+                    // 手指触屏拉动准备滚动，只触发一次        顺序: 1
+                    mHideHandler.removeCallbacks(mHideRunnable);
+                    ObjectAnimator.ofFloat(tvAddTime, "alpha", 0, 1).start();
+                    break;
+                case AbsListView.OnScrollListener.SCROLL_STATE_FLING:
+                    // 持续滚动开始，只触发一次                顺序: 2
+                    break;
+                case AbsListView.OnScrollListener.SCROLL_STATE_IDLE:
+                    // 整个滚动事件结束，只触发一次            顺序: 4
+                    mHideHandler.postDelayed(mHideRunnable, 1500);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        @Override
+        public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+            super.onScrolled(recyclerView, dx, dy);
+            GridLayoutManager layoutManager = (GridLayoutManager) rvImage.getLayoutManager();
+            int position = Objects.requireNonNull(layoutManager).findFirstVisibleItemPosition();
+            Image firstVisibleImage = mImageAdapter.getFirstVisibleImage(position);
+            if (firstVisibleImage != null) {
+                tvAddTime.setText(getImageTime(SelectorActivity.this, firstVisibleImage.getAddedTime()));
             }
         }
     }

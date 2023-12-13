@@ -81,7 +81,7 @@ public class PreviewActivity extends AppCompatActivity {
      */
     private void initData() {
         position = getIntent().getIntExtra(ImageSelector.POSITION, 0);
-        config = getIntent().getParcelableExtra(ImageSelector.KEY_CONFIG);
+        config = (RequestConfig) getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
     }
 
     /**
@@ -157,10 +157,10 @@ public class PreviewActivity extends AppCompatActivity {
             btnConfirm.setEnabled(true);
             if (config.isSingle) {
                 tvConfirm.setText(R.string.selector_send);
-            } else if (config.maxSelectCount <= 0) {
+            } else if (config.maxCount <= 0) {
                 tvConfirm.setText(String.format(getString(R.string.selector_send) + "(%1$s)", mSelectImages.size()));
             } else {
-                tvConfirm.setText(String.format(getString(R.string.selector_send) + "(%1$s/%2$s)", mSelectImages.size(), config.maxSelectCount));
+                tvConfirm.setText(String.format(getString(R.string.selector_send) + "(%1$s/%2$s)", mSelectImages.size(), config.maxCount));
             }
         }
     }
@@ -174,7 +174,7 @@ public class PreviewActivity extends AppCompatActivity {
             } else if (config.isSingle) {
                 mSelectImages.clear();
                 mSelectImages.add(image);
-            } else if (config.maxSelectCount <= 0 || mSelectImages.size() < config.maxSelectCount) {
+            } else if (config.maxCount <= 0 || mSelectImages.size() < config.maxCount) {
                 mSelectImages.add(image);
             }
             changeSelect(position);

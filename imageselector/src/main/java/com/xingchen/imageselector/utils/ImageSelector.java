@@ -2,10 +2,7 @@ package com.xingchen.imageselector.utils;
 
 import android.app.Activity;
 
-import androidx.fragment.app.Fragment;
-
-import com.xingchen.imageselector.activity.ClipImageActivity;
-import com.xingchen.imageselector.activity.SelectorActivity;
+import com.xingchen.imageselector.activity.PermissionActivity;
 import com.xingchen.imageselector.entry.RequestConfig;
 
 import java.util.ArrayList;
@@ -33,23 +30,25 @@ public class ImageSelector {
     public static final String POSITION = "position";
 
     /**
-     * 图片选择的结果
-     */
-    public static final String SELECT_RESULT = "select_result";
-
-    /**
      * 最大的图片选择数
      */
-    public static final String MAX_SELECT_COUNT = "max_select_count";
+    public static final String MAX_COUNT = "max_count";
 
     /**
      * 图片选中器的配置
      */
     public static final String KEY_CONFIG = "key_config";
 
+    /**
+     * 图片选择的结果
+     */
+    public static final String SELECT_RESULT = "select_result";
+
     public static final int SELECTOR_REQUEST_CODE = 0x00000010;
 
     public static final int CAMERA_REQUEST_CODE = 0x00000011;
+
+    public static final int VIDEO_REQUEST_CODE = 0x00000012;
 
     public static ImageSelectorBuilder builder() {
         return new ImageSelectorBuilder();
@@ -113,18 +112,18 @@ public class ImageSelector {
          * @return
          */
         public ImageSelectorBuilder useCamera(boolean enableCamera) {
-            config.enableCamera = enableCamera;
+            config.useCamera = enableCamera;
             return this;
         }
 
         /**
          * 是否仅拍照，不打开相册。true时，useCamera也必定为true
          *
-         * @param onlyTakePhoto
+         * @param actionType
          * @return
          */
-        public ImageSelectorBuilder onlyTakePhoto(boolean onlyTakePhoto) {
-            config.onlyTakePhoto = onlyTakePhoto;
+        public ImageSelectorBuilder setActionType(ActionType actionType) {
+            config.actionType = actionType;
             return this;
         }
 
@@ -135,7 +134,7 @@ public class ImageSelector {
          * @return
          */
         public ImageSelectorBuilder setMaxSelectCount(int maxSelectCount) {
-            config.maxSelectCount = maxSelectCount;
+            config.maxCount = maxSelectCount;
             return this;
         }
 
@@ -158,31 +157,12 @@ public class ImageSelector {
          * @param requestCode
          */
         public void start(Activity activity, int requestCode) {
-            if (config.onlyTakePhoto) {//仅拍照，useCamera必须为true
-                config.enableCamera = true;
-            }
-            if (config.isCrop) {
-                ClipImageActivity.openActivity(activity, requestCode, config);
-            } else {
-                SelectorActivity.openActivity(activity, requestCode, config);
-            }
-        }
-
-        /**
-         * 打开相册
-         *
-         * @param fragment
-         * @param requestCode
-         */
-        public void start(Fragment fragment, int requestCode) {
-            if (config.onlyTakePhoto) {//仅拍照，useCamera必须为true
-                config.enableCamera = true;
-            }
-            if (config.isCrop) {
-                ClipImageActivity.openActivity(fragment, requestCode, config);
-            } else {
-                SelectorActivity.openActivity(fragment, requestCode, config);
-            }
+            PermissionActivity.openActivity(activity, config, requestCode);
+//            if (config.isCrop) {
+//                ClipImageActivity.openActivity(activity, requestCode, config);
+//            } else {
+//                SelectorActivity.openActivity(activity, requestCode, config);
+//            }
         }
     }
 }

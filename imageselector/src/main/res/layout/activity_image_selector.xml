@@ -1,33 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    tools:context=".activity.SelectorActivity">
+    android:layout_height="match_parent">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/cl_title"
         android:layout_width="match_parent"
-        android:layout_height="48dp"
+        android:layout_height="wrap_content"
         android:background="@color/colorGray"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
+        app:layout_constraintTop_toTopOf="parent">
 
         <ImageView
             android:id="@+id/iv_back"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
+            android:layout_height="48dp"
             android:paddingLeft="10dp"
             android:paddingRight="10dp"
             android:scaleType="centerInside"
-            android:src="@drawable/icon_back" />
+            android:src="@drawable/icon_back"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <View
+            android:id="@+id/view_line"
             android:layout_width="1dp"
-            android:layout_height="match_parent"
-            android:layout_marginTop="12dp"
-            android:layout_marginBottom="12dp"
-            android:background="@android:color/black" />
+            android:layout_height="30dp"
+            android:background="@android:color/black"
+            app:layout_constraintBottom_toBottomOf="@id/iv_back"
+            app:layout_constraintStart_toEndOf="@id/iv_back"
+            app:layout_constraintTop_toTopOf="@id/iv_back" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -36,20 +39,20 @@
             android:layout_marginLeft="10dp"
             android:text="@string/selector_image"
             android:textColor="@android:color/white"
-            android:textSize="18sp" />
-
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1" />
+            android:textSize="18sp"
+            app:layout_constraintBottom_toBottomOf="@id/iv_back"
+            app:layout_constraintStart_toEndOf="@id/view_line"
+            app:layout_constraintTop_toTopOf="@id/iv_back" />
 
         <FrameLayout
             android:id="@+id/btn_confirm"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="10dp"
-            android:layout_marginRight="10dp"
-            android:foreground="@drawable/btn_foreground_selector">
+            android:foreground="@drawable/btn_foreground_selector"
+            app:layout_constraintBottom_toBottomOf="@id/iv_back"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/iv_back">
 
             <TextView
                 android:id="@+id/tv_confirm"
@@ -63,18 +66,21 @@
                 android:textColor="@android:color/white"
                 android:textSize="14sp" />
         </FrameLayout>
-    </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_image"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:overScrollMode="never"
+        app:layout_constraintBottom_toTopOf="@id/cl_bottom"
+        app:layout_constraintTop_toBottomOf="@id/cl_title" />
 
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_image"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:overScrollMode="never" />
+        app:layout_constraintBottom_toTopOf="@id/cl_bottom"
+        app:layout_constraintTop_toBottomOf="@id/cl_title">
 
         <View
             android:id="@+id/view_mask"
@@ -89,66 +95,57 @@
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
             android:layout_marginTop="100dp"
-            android:scrollbars="vertical"
             android:visibility="invisible" />
-
-        <TextView
-            android:id="@+id/tv_time"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="#9e111212"
-            android:paddingLeft="10dp"
-            android:paddingTop="5dp"
-            android:paddingRight="10dp"
-            android:paddingBottom="5dp"
-            android:textColor="@android:color/white"
-            android:textSize="12sp" />
     </FrameLayout>
 
-    <LinearLayout
+    <TextView
+        android:id="@+id/tv_time"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:alpha="0"
+        android:background="#9e111212"
+        android:paddingLeft="10dp"
+        android:paddingTop="5dp"
+        android:paddingRight="10dp"
+        android:paddingBottom="5dp"
+        android:textColor="@android:color/white"
+        android:textSize="12sp"
+        app:layout_constraintTop_toTopOf="@id/rv_image" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/cl_bottom"
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:background="@color/colorGray"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
+        app:layout_constraintBottom_toBottomOf="parent">
 
-        <RelativeLayout
-            android:id="@+id/btn_folder"
+        <TextView
+            android:id="@+id/tv_folder"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
-            android:paddingLeft="15dp"
-            android:paddingRight="15dp">
+            android:layout_marginStart="15dp"
+            android:paddingEnd="10dp"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="全部图片" />
 
-            <TextView
-                android:id="@+id/tv_folder"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@android:color/white"
-                android:textSize="18sp" />
-
-            <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignBottom="@+id/tv_folder"
-                android:layout_marginStart="2dp"
-                android:layout_marginLeft="2dp"
-                android:layout_toEndOf="@+id/tv_folder"
-                android:layout_toRightOf="@+id/tv_folder"
-                android:src="@drawable/text_indicator" />
-        </RelativeLayout>
-
-        <Space
-            android:layout_width="0dp"
+        <ImageView
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1" />
+            android:src="@drawable/text_indicator"
+            app:layout_constraintBottom_toBottomOf="@id/tv_folder"
+            app:layout_constraintEnd_toEndOf="@id/tv_folder" />
 
         <View
             android:layout_width="1dp"
-            android:layout_height="match_parent"
-            android:layout_marginTop="12dp"
-            android:layout_marginBottom="12dp"
-            android:background="@android:color/black" />
+            android:layout_height="30dp"
+            android:background="@android:color/black"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/btn_preview"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <FrameLayout
             android:id="@+id/btn_preview"
@@ -157,7 +154,8 @@
             android:foreground="@drawable/btn_foreground_selector"
             android:minWidth="70dp"
             android:paddingStart="10dp"
-            android:paddingEnd="10dp">
+            android:paddingEnd="10dp"
+            app:layout_constraintEnd_toEndOf="parent">
 
             <TextView
                 android:id="@+id/tv_preview"
@@ -168,5 +166,5 @@
                 android:textColor="@android:color/white"
                 android:textSize="18sp" />
         </FrameLayout>
-    </LinearLayout>
-</LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

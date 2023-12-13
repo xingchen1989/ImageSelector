@@ -30,6 +30,12 @@
         android:layout_height="wrap_content"
         android:text="拍照并剪裁" />
 
+    <Button
+        android:id="@+id/btn_pick_video"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="选择视频" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view"
         android:layout_width="match_parent"
