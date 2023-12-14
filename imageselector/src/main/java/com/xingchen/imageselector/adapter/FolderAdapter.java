@@ -29,7 +29,7 @@ public class FolderAdapter extends RecyclerView.Adapter<FolderAdapter.ViewHolder
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.adapter_folder, parent, false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.adapter_folder_item, parent, false);
         return new ViewHolder(view);
     }
 
@@ -42,14 +42,11 @@ public class FolderAdapter extends RecyclerView.Adapter<FolderAdapter.ViewHolder
         if (!folder.getImageList().isEmpty()) {
             Glide.with(mContext).load(folder.getImageList().get(0).getContentUri()).into(holder.ivImage);
         }
-        holder.itemView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mSelectItem = holder.getAdapterPosition();
-                notifyDataSetChanged();
-                if (mOnFolderSelectListener != null) {
-                    mOnFolderSelectListener.OnFolderSelect(folder);
-                }
+        holder.itemView.setOnClickListener(v -> {
+            mSelectItem = holder.getAdapterPosition();
+            notifyDataSetChanged();
+            if (mOnFolderSelectListener != null) {
+                mOnFolderSelectListener.OnFolderSelect(folder);
             }
         });
     }

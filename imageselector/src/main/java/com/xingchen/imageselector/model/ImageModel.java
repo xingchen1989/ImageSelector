@@ -16,7 +16,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ImageModel {
-    private static ImageModel mInstance = new ImageModel();
+    private static ImageModel mInstance = new ImageModel();//数据model单例
+
+    public static ArrayList<ImageData> mTotalImages = new ArrayList<>();//图片数据源
+
+    public static ArrayList<ImageData> mSelectImages = new ArrayList<>();//保存选中的图片
 
     public interface DataCallback {
         void onSuccess(ArrayList<ImageFolder> imageFolders);
@@ -38,7 +42,9 @@ public class ImageModel {
     public void asyncLoadImage(Context context, DataCallback callback) {
         new Thread(() -> {
             if (callback != null) {
-                callback.onSuccess(splitFolder(context, scanImages(context)));
+                resetImageData();
+                scanImages(context);
+                callback.onSuccess(splitFolder(context, mTotalImages));
             }
         }).start();
     }
@@ -48,8 +54,7 @@ public class ImageModel {
      *
      * @return
      */
-    private ArrayList<ImageData> scanImages(Context context) {
-        ArrayList<ImageData> images = new ArrayList<>();
+    private void scanImages(Context context) {
         Cursor mCursor = context.getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, new String[]{
                         MediaStore.Images.Media._ID,
                         MediaStore.Images.Media.DATA,
@@ -75,11 +80,15 @@ public class ImageModel {
                 Uri uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
 //                Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI.buildUpon().appendPath(String.valueOf(id)).build();
                 if (checkImageValid(path))
-                    images.add(new ImageData(time, mimeType, name, path, uri));
+                    mTotalImages.add(new ImageData(time, mimeType, name, path, uri));
             }
             mCursor.close();
         }
-        return images;
+    }
+
+    private void resetImageData() {
+        mTotalImages.clear();
+        mSelectImages.clear();
     }
 
     /**

@@ -9,7 +9,6 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Intent;
-import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -19,8 +18,6 @@ import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
 import android.widget.AbsListView;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -35,6 +32,7 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.gyf.immersionbar.ImmersionBar;
 import com.xingchen.imageselector.R;
 import com.xingchen.imageselector.adapter.FolderAdapter;
 import com.xingchen.imageselector.adapter.ImageAdapter;
@@ -44,7 +42,6 @@ import com.xingchen.imageselector.entry.RequestConfig;
 import com.xingchen.imageselector.model.ImageModel;
 import com.xingchen.imageselector.utils.ActionType;
 import com.xingchen.imageselector.utils.ImageSelector;
-import com.xingchen.imageselector.utils.VersionUtils;
 
 import java.io.File;
 import java.io.InputStream;
@@ -71,8 +68,8 @@ public class SelectorActivity extends AppCompatActivity {
     private FolderAdapter mFolderAdapter;
     private Runnable mHideRunnable;
     private Handler mHideHandler;
-    private RequestConfig config;
     private Uri mCameraUri;
+    private RequestConfig requestConfig;
     private boolean isFolderOpen;
 
     /**
@@ -103,7 +100,6 @@ public class SelectorActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_image_selector);
-        setStatusBarColor();//设置状态栏颜色
         initData();//初始化数据
         initView();//初始化视图
         initLogic();//初始化逻辑
@@ -111,21 +107,6 @@ public class SelectorActivity extends AppCompatActivity {
         initImageList();//初始化图片列表
         initFolderList();//初始化文件夹列表
         setSelectCount(0);//初始化选中的数量为0
-    }
-
-    @SuppressLint("NotifyDataSetChanged")
-    @Override
-    public void onConfigurationChanged(@NonNull Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        GridLayoutManager layoutManager = (GridLayoutManager) rvImage.getLayoutManager();
-        if (layoutManager != null && mImageAdapter != null) {
-            if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
-                layoutManager.setSpanCount(3);
-            } else if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                layoutManager.setSpanCount(5);
-            }
-            mImageAdapter.notifyDataSetChanged();
-        }
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -147,7 +128,7 @@ public class SelectorActivity extends AppCompatActivity {
                 addPictureToAlbum(mCameraUri);
                 imageContentUris.add(mCameraUri);
                 saveImageAndFinish(imageContentUris, true);
-            } else if (config.actionType == ActionType.TAKE_PHOTO) finish();
+            } else if (requestConfig.actionType == ActionType.TAKE_PHOTO) finish();
         }
     }
 
@@ -155,8 +136,8 @@ public class SelectorActivity extends AppCompatActivity {
      * 初始化数据
      */
     private void initData() {
-        config = (RequestConfig) getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
         mHideHandler = new Handler(Looper.myLooper());
+        requestConfig = (RequestConfig) getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
         mHideRunnable = () -> ObjectAnimator.ofFloat(tvAddTime, "alpha", 1, 0).start();
     }
 
@@ -164,6 +145,7 @@ public class SelectorActivity extends AppCompatActivity {
      * 初始化控件
      */
     private void initView() {
+        ImmersionBar.with(this).titleBar(R.id.cl_title).init();
         ivBack = findViewById(R.id.iv_back);
         rvImage = findViewById(R.id.rv_image);
         rvFolder = findViewById(R.id.rv_folder);
@@ -180,9 +162,9 @@ public class SelectorActivity extends AppCompatActivity {
      * 初始化逻辑
      */
     private void initLogic() {
-        if (config.actionType == ActionType.TAKE_PHOTO) {
+        if (requestConfig.actionType == ActionType.TAKE_PHOTO) {
             openDeviceCamera();
-        } else if (config.actionType == ActionType.PICK_VIDEO) {
+        } else if (requestConfig.actionType == ActionType.PICK_VIDEO) {
             openVideoFiles();
         } else {
             listImageFiles();
@@ -206,10 +188,11 @@ public class SelectorActivity extends AppCompatActivity {
      */
     private void initImageList() {
         GridLayoutManager mLayoutManager = new GridLayoutManager(this, 3);
-        mImageAdapter = new ImageAdapter(this, config);
-        mImageAdapter.setItemActionListener(new MyItemClickListener());
+        mImageAdapter = new ImageAdapter(this, requestConfig);
+        mImageAdapter.setActionListener(new MyItemClickListener());
         rvImage.setLayoutManager(mLayoutManager);
         rvImage.setAdapter(mImageAdapter);
+        rvImage.setItemAnimator(null);
     }
 
     /**
@@ -223,17 +206,6 @@ public class SelectorActivity extends AppCompatActivity {
             closeFolder();
         });
         rvFolder.setAdapter(mFolderAdapter);
-    }
-
-    /**
-     * 修改状态栏颜色
-     */
-    private void setStatusBarColor() {
-        if (VersionUtils.isAndroidL()) {
-            Window window = getWindow();
-            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            window.setStatusBarColor(getResources().getColor(R.color.colorGray));
-        }
     }
 
     /**
@@ -305,22 +277,20 @@ public class SelectorActivity extends AppCompatActivity {
      * @param count
      */
     private void setSelectCount(int count) {
-        if (count == 0) {
-            btnConfirm.setEnabled(false);
-            btnPreview.setEnabled(false);
+        String confirm = getString(R.string.selector_send);
+        String preview = getString(R.string.selector_preview);
+        btnConfirm.setEnabled(count != 0);
+        btnPreview.setEnabled(count != 0);
+        if (requestConfig.isSingle) {
             tvConfirm.setText(R.string.selector_send);
             tvPreview.setText(R.string.selector_preview);
+        } else if (requestConfig.maxCount <= 0) {
+            tvConfirm.setText(String.format(confirm + "(%1$s)", count));
+            tvPreview.setText(String.format(preview + "(%1$s)", count));
         } else {
-            btnConfirm.setEnabled(true);
-            btnPreview.setEnabled(true);
-            tvPreview.setText(String.format(getString(R.string.selector_preview) + "(%1$s)", count));
-            if (config.isSingle) {
-                tvConfirm.setText(R.string.selector_send);
-            } else if (config.maxCount > 0) {
-                tvConfirm.setText(String.format(getString(R.string.selector_send) + "(%1$s/%2$s)", count, config.maxCount));
-            } else {
-                tvConfirm.setText(String.format(getString(R.string.selector_send) + "(%1$s)", count));
-            }
+            int maxCount = requestConfig.maxCount;
+            tvPreview.setText(String.format(preview + "(%1$s)", count));
+            tvConfirm.setText(String.format(confirm + "(%1$s/%2$s)", count, maxCount));
         }
     }
 
@@ -328,9 +298,7 @@ public class SelectorActivity extends AppCompatActivity {
      * 预览所选图片
      */
     private void previewImage() {
-        ArrayList<ImageData> totalImages = new ArrayList<>(mImageAdapter.getSelectImages());
-        PreviewActivity.openActivity(this, ImageSelector.SELECTOR_REQUEST_CODE,
-                0, config, mImageAdapter.getSelectImages(), totalImages);
+        PreviewActivity.openActivity(this, requestConfig, ImageSelector.SELECTOR_REQUEST_CODE);
     }
 
     /**
@@ -465,14 +433,13 @@ public class SelectorActivity extends AppCompatActivity {
         }
 
         @Override
-        public void OnImageSelect(ImageData image, int selectCount) {
-            setSelectCount(selectCount);
+        public void OnImageClick(ImageData image, int position) {
+            previewImage();
         }
 
         @Override
-        public void OnImageClick(ImageData image, int position) {
-            PreviewActivity.openActivity(SelectorActivity.this, ImageSelector.SELECTOR_REQUEST_CODE,
-                    position, config, mImageAdapter.getSelectImages(), mImageAdapter.getTotalImages());
+        public void OnImageSelect(ImageData image, int selectCount) {
+            setSelectCount(selectCount);
         }
     }
 
@@ -501,11 +468,13 @@ public class SelectorActivity extends AppCompatActivity {
         @Override
         public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
             super.onScrolled(recyclerView, dx, dy);
-            GridLayoutManager layoutManager = (GridLayoutManager) rvImage.getLayoutManager();
-            int position = Objects.requireNonNull(layoutManager).findFirstVisibleItemPosition();
-            ImageData firstVisibleImageData = mImageAdapter.getFirstVisibleImage(position);
-            if (firstVisibleImageData != null) {
-                tvAddTime.setText(getImageTime(SelectorActivity.this, firstVisibleImageData.getAddedTime()));
+            try {
+                GridLayoutManager layoutManager = (GridLayoutManager) rvImage.getLayoutManager();
+                int position = Objects.requireNonNull(layoutManager).findFirstVisibleItemPosition();
+                ImageData firstImage = mImageAdapter.getFirstVisibleImage(position);
+                tvAddTime.setText(getImageTime(SelectorActivity.this, firstImage.getAddedTime()));
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }

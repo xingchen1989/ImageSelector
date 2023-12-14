@@ -1,12 +1,11 @@
 package com.xingchen.imageselector.activity;
 
+import static com.xingchen.imageselector.model.ImageModel.mSelectImages;
+import static com.xingchen.imageselector.model.ImageModel.mTotalImages;
+
 import android.app.Activity;
 import android.content.Intent;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -14,34 +13,25 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.viewpager.widget.ViewPager;
 
+import com.gyf.immersionbar.ImmersionBar;
 import com.xingchen.imageselector.R;
 import com.xingchen.imageselector.adapter.FixExceptionViewPager;
 import com.xingchen.imageselector.adapter.ImagePagerAdapter;
 import com.xingchen.imageselector.entry.ImageData;
 import com.xingchen.imageselector.entry.RequestConfig;
 import com.xingchen.imageselector.utils.ImageSelector;
-import com.xingchen.imageselector.utils.VersionUtils;
-
-import java.util.ArrayList;
 
 public class PreviewActivity extends AppCompatActivity {
-    private FixExceptionViewPager viewPager;
-    private TextView tvIndicator;
-    private TextView tvConfirm;
-    private TextView tvSelect;
     private ImageView ivBack;
+    private ImageView ivSelect;
+    private TextView tvSelect;
+    private TextView tvIndicator;
     private FrameLayout btnConfirm;
+    private FixExceptionViewPager fixViewPager;
+    private RequestConfig requestConfig;//图片浏览器的配置信息
 
-    private int position;//初始位置
-    private RequestConfig config;//图片浏览器的配置信息
-    private static ArrayList<ImageData> mSelectImages;//当前已经选中的图片
-    private static ArrayList<ImageData> mTotalImages;//当前所有可显示的图片
-
-    public static void openActivity(Activity activity, int requestCode, int position, RequestConfig config, ArrayList<ImageData> selectImages, ArrayList<ImageData> totalImages) {
-        mSelectImages = selectImages;
-        mTotalImages = totalImages;
+    public static void openActivity(Activity activity, RequestConfig config, int requestCode) {
         Intent intent = new Intent(activity, PreviewActivity.class);
-        intent.putExtra(ImageSelector.POSITION, position);
         intent.putExtra(ImageSelector.KEY_CONFIG, config);
         activity.startActivityForResult(intent, requestCode);
     }
@@ -50,134 +40,74 @@ public class PreviewActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_preview);
-        setStatusBarColor();//设置状态栏颜色
-        initData();
         initView();
-        initViewPager();
         initListener();
-        changeSelect(position);
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        mSelectImages = null;
-        mTotalImages = null;
-    }
-
-    /**
-     * 修改状态栏颜色
-     */
-    private void setStatusBarColor() {
-        if (VersionUtils.isAndroidL()) {
-            Window window = getWindow();
-            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            window.setStatusBarColor(getResources().getColor(R.color.colorGray));
-        }
-    }
-
-    /**
-     * 初始化数据
-     */
-    private void initData() {
-        position = getIntent().getIntExtra(ImageSelector.POSITION, 0);
-        config = (RequestConfig) getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
     }
 
     /**
      * 初始化控件
      */
     private void initView() {
-        ivBack=findViewById(R.id.iv_back);
-        viewPager = findViewById(R.id.vp_image);
-        tvIndicator = findViewById(R.id.tv_indicator);
-        tvConfirm = findViewById(R.id.tv_confirm);
+        ImmersionBar.with(this).titleBar(R.id.cl_title).init();
+        int position = mTotalImages.indexOf(mSelectImages.get(0));
+        requestConfig = (RequestConfig) getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
+        ivBack = findViewById(R.id.iv_back);
         tvSelect = findViewById(R.id.tv_select);
+        ivSelect = findViewById(R.id.iv_select);
         btnConfirm = findViewById(R.id.btn_confirm);
-    }
-
-    /**
-     * 初始化ViewPager
-     */
-    private void initViewPager() {
-        viewPager.setAdapter(new ImagePagerAdapter(mTotalImages));
-        viewPager.setCurrentItem(position);
-        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-            @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-
-            }
-
-            @Override
-            public void onPageSelected(int position) {
-                changeSelect(position);
-            }
-
-            @Override
-            public void onPageScrollStateChanged(int state) {
-
-            }
-        });
+        tvIndicator = findViewById(R.id.tv_indicator);
+        fixViewPager = findViewById(R.id.fix_vp_image);
+        fixViewPager.setAdapter(new ImagePagerAdapter(mTotalImages));
+        fixViewPager.addOnPageChangeListener(new PageChangeListener());
+        fixViewPager.setCurrentItem(position);
+        btnConfirm.setEnabled(mSelectImages.size() != 0);
+        ivSelect.setSelected(mTotalImages.get(position).isSelected());
+        tvIndicator.setText(String.format("%1$s/%2$s", position + 1, mTotalImages.size()));
     }
 
     private void initListener() {
-        ivBack.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
+        tvSelect.setOnClickListener(v -> {
+            updateData(fixViewPager.getCurrentItem());
+            updateView(fixViewPager.getCurrentItem());
         });
-        tvSelect.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                clickSelect();
-            }
+
+        btnConfirm.setOnClickListener(v -> {
+            Intent intent = new Intent();
+            setResult(RESULT_OK, intent);
+            finish();
         });
-        btnConfirm.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                //Activity关闭时，通过Intent把用户的操作(确定/返回)传给ImageSelectActivity。
-                Intent intent = new Intent();
-                setResult(RESULT_OK, intent);
-                finish();
-            }
-        });
+
+        ivBack.setOnClickListener(v -> finish());
     }
 
-    private void changeSelect(int position) {
-        Drawable drawable = mSelectImages.contains(mTotalImages.get(position)) ?
-                getResources().getDrawable(R.drawable.icon_image_select) :
-                getResources().getDrawable(R.drawable.icon_image_un_select);
-        tvSelect.setCompoundDrawablesWithIntrinsicBounds(drawable, null, null, null);
+    private void updateView(int position) {
+        btnConfirm.setEnabled(mSelectImages.size() != 0);
+        ivSelect.setSelected(mTotalImages.get(position).isSelected());
         tvIndicator.setText(String.format("%1$s/%2$s", position + 1, mTotalImages.size()));
-        if (mSelectImages.size() == 0) {
-            btnConfirm.setEnabled(false);
-            tvConfirm.setText(R.string.selector_send);
-        } else {
-            btnConfirm.setEnabled(true);
-            if (config.isSingle) {
-                tvConfirm.setText(R.string.selector_send);
-            } else if (config.maxCount <= 0) {
-                tvConfirm.setText(String.format(getString(R.string.selector_send) + "(%1$s)", mSelectImages.size()));
-            } else {
-                tvConfirm.setText(String.format(getString(R.string.selector_send) + "(%1$s/%2$s)", mSelectImages.size(), config.maxCount));
+    }
+
+    private void updateData(int position) {
+        ImageData imageData = mTotalImages.get(position);
+        if (mSelectImages.contains(imageData)) {
+            mSelectImages.remove(imageData);
+            imageData.setSelected(false);
+        } else if (requestConfig.isSingle) {
+            for (ImageData item : mSelectImages) {
+                item.setSelected(false);
             }
+            mSelectImages.clear();
+            mSelectImages.add(imageData);
+            imageData.setSelected(true);
+        } else if (requestConfig.maxCount <= 0 || mSelectImages.size() < requestConfig.maxCount) {
+            mSelectImages.add(imageData);
+            imageData.setSelected(true);
         }
     }
 
-    private void clickSelect() {
-        int position = viewPager.getCurrentItem();
-        if (mTotalImages != null && mTotalImages.size() > position) {
-            ImageData image = mTotalImages.get(position);
-            if (mSelectImages.contains(image)) {
-                mSelectImages.remove(image);
-            } else if (config.isSingle) {
-                mSelectImages.clear();
-                mSelectImages.add(image);
-            } else if (config.maxCount <= 0 || mSelectImages.size() < config.maxCount) {
-                mSelectImages.add(image);
-            }
-            changeSelect(position);
+    private class PageChangeListener extends ViewPager.SimpleOnPageChangeListener {
+        @Override
+        public void onPageSelected(int position) {
+            updateView(position);
         }
     }
 }
