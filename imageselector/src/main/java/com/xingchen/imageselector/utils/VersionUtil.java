@@ -7,7 +7,7 @@ import android.os.Build;
  * @Description
  * @Date 2019-09-11
  */
-public class VersionUtils {
+public class VersionUtil {
 
     /**
      * 判断是否是Android L版本

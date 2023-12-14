@@ -40,64 +40,66 @@ public class PermissionActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK) {
             setResult(RESULT_OK, data);
-            finish();
         }
+        finish();
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == REQ_PERMISSION_READ) {
-            if (checkGrantResults(grantResults)) {
-                Toast.makeText(this, "允许权限，加载图片", Toast.LENGTH_SHORT).show();
-            } else {
-                showExceptionDialog();//拒绝权限，弹出提示框。
-            }
-        } else if (requestCode == REQ_PERMISSION_CAMERA) {
-            if (checkGrantResults(grantResults)) {
-                Toast.makeText(this, "允许权限，有调起相机拍照", Toast.LENGTH_SHORT).show();
-            } else {
-                showExceptionDialog();//拒绝权限，弹出提示框。
-            }
+            processPermissionResult(grantResults, "请在系统设置中打开存储权限");
         } else if (requestCode == REQ_PERMISSION_VIDEO) {
-            if (checkGrantResults(grantResults)) {
-                Toast.makeText(this, "允许权限，打开视频列表", Toast.LENGTH_SHORT).show();
-            } else {
-                showExceptionDialog();//拒绝权限，弹出提示框。
-            }
+            processPermissionResult(grantResults, "请在系统设置中打开存储权限");
+        } else if (requestCode == REQ_PERMISSION_CAMERA) {
+            processPermissionResult(grantResults, "请在系统设置中打开相机权限");
         }
     }
 
-    /**
-     * 初始化逻辑
-     */
+    public static void openActivity(Activity activity, RequestConfig config, int requestCode) {
+        Intent intent = new Intent(activity, PermissionActivity.class);
+        intent.putExtra(ImageSelector.KEY_CONFIG, config);
+        activity.startActivityForResult(intent, requestCode);
+    }
+
+    private void processPermissionResult(int[] grantResults, String message) {
+        if (checkGrantResults(grantResults)) {
+            initPermissionLogic();
+        } else {
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+            finish();
+        }
+    }
+
     private void initPermissionLogic() {
         RequestConfig config = (RequestConfig) getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
-        if (config.actionType == ActionType.TAKE_PHOTO) {// 拍照
+        if (config.actionType == ActionType.PICK_PHOTO) {// 选照片
+            String[] permissions = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE};
+            if (checkPermissions(permissions, REQ_PERMISSION_READ)) {
+                startMediaActivity(config, 1);
+            }
+        } else if (config.actionType == ActionType.TAKE_PHOTO) {// 拍照
             String[] permissions = new String[]{Manifest.permission.CAMERA};
             if (checkPermissions(permissions, REQ_PERMISSION_CAMERA)) {
-                SelectorActivity.openActivity(this, config, 0);
+                startMediaActivity(config, 2);
             }
         } else if (config.actionType == ActionType.PICK_VIDEO) {// 选视频
             String[] permissions = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE};
             if (checkPermissions(permissions, REQ_PERMISSION_VIDEO)) {
-                SelectorActivity.openActivity(this, config, 0);
-            }
-        } else {// 选照片
-            String[] permissions = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE};
-            if (checkPermissions(permissions, REQ_PERMISSION_READ)) {
-                SelectorActivity.openActivity(this, config, 0);
+                startMediaActivity(config, 3);
             }
         }
     }
 
-//    private void f(RequestConfig config) {
-//        if (config.isCrop) {
-//            ClipImageActivity.openActivity(this, config, requestCode);
-//        } else {
-//            SelectorActivity.openActivity(this, config, requestCode);
-//        }
-//    }
+    private void startMediaActivity(RequestConfig config, int requestCode) {
+        if (config.actionType == ActionType.PICK_VIDEO) {
+            SelectorActivity.openActivity(this, config, requestCode);
+        } else if (config.isCrop) {
+            ClipImageActivity.openActivity(this, config, requestCode);
+        } else {
+            SelectorActivity.openActivity(this, config, requestCode);
+        }
+    }
 
     private boolean checkGrantResults(int... grantResults) {
         boolean hasPermission = true;
@@ -119,9 +121,6 @@ public class PermissionActivity extends AppCompatActivity {
         return hasPermission;
     }
 
-    /**
-     * 发生没有权限等异常时，显示一个提示dialog.
-     */
     private void showExceptionDialog() {
         new AlertDialog.Builder(this)
                 .setCancelable(false)
@@ -136,11 +135,5 @@ public class PermissionActivity extends AppCompatActivity {
                     Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, uri);
                     startActivity(intent);
                 }).show();
-    }
-
-    public static void openActivity(Activity activity, RequestConfig config, int requestCode) {
-        Intent intent = new Intent(activity, PermissionActivity.class);
-        intent.putExtra(ImageSelector.KEY_CONFIG, config);
-        activity.startActivityForResult(intent, requestCode);
     }
 }

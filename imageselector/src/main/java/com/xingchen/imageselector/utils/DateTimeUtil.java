@@ -9,7 +9,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
-public class DateTimeUtils {
+public class DateTimeUtil {
     public static String getImageTime(Context context, long time) {
         if (String.valueOf(time).length() < 13) {
             time *= 1000;

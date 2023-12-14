@@ -1,5 +1,6 @@
 package com.xingchen.imageselector.model;
 
+import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
 import android.database.Cursor;
@@ -43,65 +44,28 @@ public class ImageModel {
         new Thread(() -> {
             if (callback != null) {
                 resetImageData();
-                scanImages(context);
+                scanImages(context.getContentResolver());
                 callback.onSuccess(splitFolder(context, mTotalImages));
             }
         }).start();
     }
 
     /**
-     * 扫描图片
+     * 返回第一个被选中数据
      *
      * @return
      */
-    private void scanImages(Context context) {
-        Cursor mCursor = context.getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, new String[]{
-                        MediaStore.Images.Media._ID,
-                        MediaStore.Images.Media.DATA,
-                        MediaStore.Images.Media.MIME_TYPE,
-                        MediaStore.Images.Media.DISPLAY_NAME,
-                        MediaStore.Images.Media.DATE_ADDED},
-                null, null, MediaStore.Images.Media.DATE_ADDED + " DESC");
-
-        //读取扫描到的图片
-        if (mCursor != null) {
-            while (mCursor.moveToNext()) {
-                // 获取图片的id
-                long id = mCursor.getLong(mCursor.getColumnIndex(MediaStore.Images.Media._ID));
-                //获取图片时间
-                long time = mCursor.getLong(mCursor.getColumnIndex(MediaStore.Images.Media.DATE_ADDED));
-                //获取图片名称
-                String name = mCursor.getString(mCursor.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME));
-                //获取图片类型
-                String mimeType = mCursor.getString(mCursor.getColumnIndex(MediaStore.Images.Media.MIME_TYPE));
-                //获取图片路径
-                String path = mCursor.getString(mCursor.getColumnIndex(MediaStore.Images.Media.DATA));
-                //获取图片uri
-                Uri uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
-//                Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI.buildUpon().appendPath(String.valueOf(id)).build();
-                if (checkImageValid(path))
-                    mTotalImages.add(new ImageData(time, mimeType, name, path, uri));
-            }
-            mCursor.close();
-        }
-    }
-
-    private void resetImageData() {
-        mTotalImages.clear();
-        mSelectImages.clear();
+    public int getFirstSelect() {
+        if (mSelectImages.isEmpty()) return 0;
+        else return mTotalImages.indexOf(mSelectImages.get(0));
     }
 
     /**
-     * 检查图片是否有效
-     *
-     * @param path
-     * @return
+     * 重置数据源
      */
-    private boolean checkImageValid(String path) {
-        if (!TextUtils.isEmpty(path)) {
-            return new File(path).exists();
-        }
-        return false;
+    private void resetImageData() {
+        mTotalImages.clear();
+        mSelectImages.clear();
     }
 
     /**
@@ -153,5 +117,43 @@ public class ImageModel {
             folder.addImage(image);
         }
         return folders;
+    }
+
+    /**
+     * 扫描图片
+     *
+     * @return
+     */
+    private void scanImages(ContentResolver contentResolver) {
+        String[] projection = new String[]{
+                MediaStore.Images.Media._ID,
+                MediaStore.Images.Media.DATA,
+                MediaStore.Images.Media.MIME_TYPE,
+                MediaStore.Images.Media.DATE_ADDED,
+                MediaStore.Images.Media.DISPLAY_NAME,
+        };
+        Cursor mCursor = contentResolver.query(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                projection, null, null, null
+        );
+        if (mCursor != null) {
+            while (mCursor.moveToNext()) {
+                // 获取图片的id
+                long id = mCursor.getLong(mCursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID));
+                //获取图片时间
+                long time = mCursor.getLong(mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED));
+                //获取图片路径
+                String path = mCursor.getString(mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA));
+                //获取图片类型
+                String type = mCursor.getString(mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.MIME_TYPE));
+                //获取图片名
+                String name = mCursor.getString(mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME));
+                //获取图片uri
+                Uri uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
+                // 在这里可以处理每张图片的ID、名称和URI
+                mTotalImages.add(new ImageData(time, type, name, path, uri));
+            }
+            mCursor.close();
+        }
     }
 }

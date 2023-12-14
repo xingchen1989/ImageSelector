@@ -28,10 +28,11 @@ public class PreviewActivity extends AppCompatActivity {
     private TextView tvIndicator;
     private FrameLayout btnConfirm;
     private FixExceptionViewPager fixViewPager;
-    private RequestConfig requestConfig;//图片浏览器的配置信息
+    private RequestConfig config;//图片浏览器的配置信息
 
-    public static void openActivity(Activity activity, RequestConfig config, int requestCode) {
+    public static void openActivity(Activity activity, RequestConfig config, int position, int requestCode) {
         Intent intent = new Intent(activity, PreviewActivity.class);
+        intent.putExtra(ImageSelector.POSITION, position);
         intent.putExtra(ImageSelector.KEY_CONFIG, config);
         activity.startActivityForResult(intent, requestCode);
     }
@@ -49,8 +50,8 @@ public class PreviewActivity extends AppCompatActivity {
      */
     private void initView() {
         ImmersionBar.with(this).titleBar(R.id.cl_title).init();
-        int position = mTotalImages.indexOf(mSelectImages.get(0));
-        requestConfig = (RequestConfig) getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
+        int position = getIntent().getIntExtra(ImageSelector.POSITION, 0);
+        config = (RequestConfig) getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
         ivBack = findViewById(R.id.iv_back);
         tvSelect = findViewById(R.id.tv_select);
         ivSelect = findViewById(R.id.iv_select);
@@ -91,14 +92,14 @@ public class PreviewActivity extends AppCompatActivity {
         if (mSelectImages.contains(imageData)) {
             mSelectImages.remove(imageData);
             imageData.setSelected(false);
-        } else if (requestConfig.isSingle) {
+        } else if (config.isSingle) {
             for (ImageData item : mSelectImages) {
                 item.setSelected(false);
             }
             mSelectImages.clear();
             mSelectImages.add(imageData);
             imageData.setSelected(true);
-        } else if (requestConfig.maxCount <= 0 || mSelectImages.size() < requestConfig.maxCount) {
+        } else if (config.maxCount <= 0 || mSelectImages.size() < config.maxCount) {
             mSelectImages.add(imageData);
             imageData.setSelected(true);
         }

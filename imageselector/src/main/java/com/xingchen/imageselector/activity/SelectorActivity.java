@@ -1,6 +1,6 @@
 package com.xingchen.imageselector.activity;
 
-import static com.xingchen.imageselector.utils.DateTimeUtils.getImageTime;
+import static com.xingchen.imageselector.utils.DateTimeUtil.getImageTime;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -69,7 +69,7 @@ public class SelectorActivity extends AppCompatActivity {
     private Runnable mHideRunnable;
     private Handler mHideHandler;
     private Uri mCameraUri;
-    private RequestConfig requestConfig;
+    private RequestConfig config;
     private boolean isFolderOpen;
 
     /**
@@ -113,22 +113,25 @@ public class SelectorActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == ImageSelector.SELECTOR_REQUEST_CODE) {
+        if (requestCode == ImageSelector.REQ_IMAGE_CODE) {
+            setSelectCount(mImageAdapter.getSelectImages().size());
+            mImageAdapter.notifyDataSetChanged();
             if (resultCode == RESULT_OK) {
-                //如果用户在预览页点击了确定，就直接把用户选中的图片返回给用户。
                 confirmSelect();
-            } else {
-                //否则，就刷新当前页面。
-                mImageAdapter.notifyDataSetChanged();
-                setSelectCount(mImageAdapter.getSelectImages().size());
             }
-        } else if (requestCode == ImageSelector.CAMERA_REQUEST_CODE) {
+        } else if (requestCode == ImageSelector.REQ_CAMERA_CODE) {
             if (resultCode == RESULT_OK) {
                 ArrayList<Uri> imageContentUris = new ArrayList<>();
                 addPictureToAlbum(mCameraUri);
                 imageContentUris.add(mCameraUri);
                 saveImageAndFinish(imageContentUris, true);
-            } else if (requestConfig.actionType == ActionType.TAKE_PHOTO) finish();
+            }
+        } else if (requestCode == ImageSelector.REQ_VIDEO_CODE) {
+            if (resultCode == RESULT_OK && data != null) {
+                ArrayList<Uri> videoContentUris = new ArrayList<>();
+                videoContentUris.add(data.getData());
+                saveImageAndFinish(videoContentUris, false);
+            } else finish();
         }
     }
 
@@ -137,7 +140,7 @@ public class SelectorActivity extends AppCompatActivity {
      */
     private void initData() {
         mHideHandler = new Handler(Looper.myLooper());
-        requestConfig = (RequestConfig) getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
+        config = (RequestConfig) getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
         mHideRunnable = () -> ObjectAnimator.ofFloat(tvAddTime, "alpha", 1, 0).start();
     }
 
@@ -162,12 +165,12 @@ public class SelectorActivity extends AppCompatActivity {
      * 初始化逻辑
      */
     private void initLogic() {
-        if (requestConfig.actionType == ActionType.TAKE_PHOTO) {
-            openDeviceCamera();
-        } else if (requestConfig.actionType == ActionType.PICK_VIDEO) {
-            openVideoFiles();
-        } else {
+        if (config.actionType == ActionType.PICK_PHOTO) {
             listImageFiles();
+        } else if (config.actionType == ActionType.PICK_VIDEO) {
+            openVideoFiles();
+        } else if (config.actionType == ActionType.TAKE_PHOTO) {
+            openDeviceCamera();
         }
     }
 
@@ -188,7 +191,7 @@ public class SelectorActivity extends AppCompatActivity {
      */
     private void initImageList() {
         GridLayoutManager mLayoutManager = new GridLayoutManager(this, 3);
-        mImageAdapter = new ImageAdapter(this, requestConfig);
+        mImageAdapter = new ImageAdapter(this, config);
         mImageAdapter.setActionListener(new MyItemClickListener());
         rvImage.setLayoutManager(mLayoutManager);
         rvImage.setAdapter(mImageAdapter);
@@ -281,14 +284,14 @@ public class SelectorActivity extends AppCompatActivity {
         String preview = getString(R.string.selector_preview);
         btnConfirm.setEnabled(count != 0);
         btnPreview.setEnabled(count != 0);
-        if (requestConfig.isSingle) {
+        if (config.isSingle) {
             tvConfirm.setText(R.string.selector_send);
             tvPreview.setText(R.string.selector_preview);
-        } else if (requestConfig.maxCount <= 0) {
+        } else if (config.maxCount <= 0) {
             tvConfirm.setText(String.format(confirm + "(%1$s)", count));
             tvPreview.setText(String.format(preview + "(%1$s)", count));
         } else {
-            int maxCount = requestConfig.maxCount;
+            int maxCount = config.maxCount;
             tvPreview.setText(String.format(preview + "(%1$s)", count));
             tvConfirm.setText(String.format(confirm + "(%1$s/%2$s)", count, maxCount));
         }
@@ -298,7 +301,16 @@ public class SelectorActivity extends AppCompatActivity {
      * 预览所选图片
      */
     private void previewImage() {
-        PreviewActivity.openActivity(this, requestConfig, ImageSelector.SELECTOR_REQUEST_CODE);
+        this.previewImage(ImageModel.getInstance().getFirstSelect());
+    }
+
+    /**
+     * 预览所选图片
+     *
+     * @param position
+     */
+    private void previewImage(int position) {
+        PreviewActivity.openActivity(this, config, position, ImageSelector.REQ_IMAGE_CODE);
     }
 
     /**
@@ -337,15 +349,6 @@ public class SelectorActivity extends AppCompatActivity {
     }
 
     /**
-     * 创建图片文件
-     *
-     * @return
-     */
-    private File createImageFile() {
-        return new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), createImageName());
-    }
-
-    /**
      * 创建图片名称
      *
      * @return
@@ -361,7 +364,7 @@ public class SelectorActivity extends AppCompatActivity {
     private void openVideoFiles() {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
         //intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-        startActivityForResult(intent, ImageSelector.VIDEO_REQUEST_CODE);
+        startActivityForResult(intent, ImageSelector.REQ_VIDEO_CODE);
     }
 
     /**
@@ -371,11 +374,10 @@ public class SelectorActivity extends AppCompatActivity {
      */
     private void openDeviceCamera() {
         try {
-            Uri imageUri = null;
-            File photoFile = createImageFile();
+            File photoFile = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), createImageName());
             Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
             if (Build.VERSION.SDK_INT < 24) {
-                imageUri = Uri.fromFile(photoFile);
+                mCameraUri = Uri.fromFile(photoFile);
             } else {
                 //方式一，需要读写权限
                         /*ContentValues contentValues = new ContentValues(1);
@@ -388,11 +390,10 @@ public class SelectorActivity extends AppCompatActivity {
                         imageUri = Uri.fromFile(mTmpFile);*/
 
                 //方式3，使用 FileProvider 类进行授权，可以不申请读写权限
-                imageUri = FileProvider.getUriForFile(this, getPackageName() + ".imageSelectorProvider", photoFile);
+                mCameraUri = FileProvider.getUriForFile(this, getPackageName() + ".imageSelectorProvider", photoFile);
             }
-            intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
-            startActivityForResult(intent, ImageSelector.CAMERA_REQUEST_CODE);
-            mCameraUri = imageUri;
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, mCameraUri);
+            startActivityForResult(intent, ImageSelector.REQ_CAMERA_CODE);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -404,25 +405,23 @@ public class SelectorActivity extends AppCompatActivity {
      * @param inputUri
      */
     private void addPictureToAlbum(Uri inputUri) {
-        //创建ContentValues对象，准备插入数据
-        ContentValues contentValues = new ContentValues();
-        contentValues.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
-        contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, createImageName());
-        //插入数据，返回所插入数据对应的Uri
-        Uri outUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
-        if (outUri != null) {
-            try {
-                ParcelFileDescriptor parcelFdInput = getContentResolver().openFileDescriptor(inputUri, "r");
-                ParcelFileDescriptor parcelFdOutput = getContentResolver().openFileDescriptor(outUri, "w");
-                InputStream inputStream = new ParcelFileDescriptor.AutoCloseInputStream(parcelFdInput);
-                OutputStream outputStream = new ParcelFileDescriptor.AutoCloseOutputStream(parcelFdOutput);
-                byte[] bytes = new byte[1024];
-                while ((inputStream.read(bytes)) != -1) {
-                    outputStream.write(bytes);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
+        try {
+            //创建ContentValues对象，准备插入数据
+            ContentValues contentValues = new ContentValues();
+            contentValues.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+            contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, createImageName());
+            //插入数据，返回所插入数据对应的Uri
+            Uri outUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
+            ParcelFileDescriptor parcelFdInput = getContentResolver().openFileDescriptor(inputUri, "r");
+            ParcelFileDescriptor parcelFdOutput = getContentResolver().openFileDescriptor(outUri, "w");
+            InputStream inputStream = new ParcelFileDescriptor.AutoCloseInputStream(parcelFdInput);
+            OutputStream outputStream = new ParcelFileDescriptor.AutoCloseOutputStream(parcelFdOutput);
+            byte[] bytes = new byte[1024];
+            while ((inputStream.read(bytes)) != -1) {
+                outputStream.write(bytes);
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -434,7 +433,7 @@ public class SelectorActivity extends AppCompatActivity {
 
         @Override
         public void OnImageClick(ImageData image, int position) {
-            previewImage();
+            previewImage(position);
         }
 
         @Override

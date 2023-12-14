@@ -44,11 +44,11 @@ public class ImageSelector {
      */
     public static final String SELECT_RESULT = "select_result";
 
-    public static final int SELECTOR_REQUEST_CODE = 0x00000010;
+    public static final int REQ_IMAGE_CODE = 0x00000010;
 
-    public static final int CAMERA_REQUEST_CODE = 0x00000011;
+    public static final int REQ_CAMERA_CODE = 0x00000011;
 
-    public static final int VIDEO_REQUEST_CODE = 0x00000012;
+    public static final int REQ_VIDEO_CODE = 0x00000012;
 
     public static ImageSelectorBuilder builder() {
         return new ImageSelectorBuilder();
@@ -158,11 +158,6 @@ public class ImageSelector {
          */
         public void start(Activity activity, int requestCode) {
             PermissionActivity.openActivity(activity, config, requestCode);
-//            if (config.isCrop) {
-//                ClipImageActivity.openActivity(activity, requestCode, config);
-//            } else {
-//                SelectorActivity.openActivity(activity, requestCode, config);
-//            }
         }
     }
 }
