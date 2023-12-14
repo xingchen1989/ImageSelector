@@ -434,7 +434,7 @@ public class SelectorActivity extends AppCompatActivity {
 
         @Override
         public void OnImageClick(ImageData image, int position) {
-            previewImage();
+            previewImage(position);
         }
 
         @Override

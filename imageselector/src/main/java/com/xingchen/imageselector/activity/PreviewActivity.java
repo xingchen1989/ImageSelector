@@ -30,8 +30,9 @@ public class PreviewActivity extends AppCompatActivity {
     private FixExceptionViewPager fixViewPager;
     private RequestConfig requestConfig;//图片浏览器的配置信息
 
-    public static void openActivity(Activity activity, RequestConfig config, int requestCode) {
+    public static void openActivity(Activity activity, RequestConfig config, int position, int requestCode) {
         Intent intent = new Intent(activity, PreviewActivity.class);
+        intent.putExtra(ImageSelector.POSITION, position);
         intent.putExtra(ImageSelector.KEY_CONFIG, config);
         activity.startActivityForResult(intent, requestCode);
     }
@@ -49,7 +50,7 @@ public class PreviewActivity extends AppCompatActivity {
      */
     private void initView() {
         ImmersionBar.with(this).titleBar(R.id.cl_title).init();
-        int position = mTotalImages.indexOf(mSelectImages.get(0));
+        int position = mSelectImages.isEmpty() ? 0 : mTotalImages.indexOf(mSelectImages.get(0));
         requestConfig = (RequestConfig) getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
         ivBack = findViewById(R.id.iv_back);
         tvSelect = findViewById(R.id.tv_select);
