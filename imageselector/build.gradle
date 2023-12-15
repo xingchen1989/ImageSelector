@@ -1,6 +1,7 @@
-apply plugin: 'com.android.library'
-apply plugin: 'com.github.dcendents.android-maven'//启用android-maven-gradle-plugin
-group = 'com.github.xingchen1989'//com.github.<用户名>（也就是你GitHub上的地址）
+plugins {
+    id 'com.android.library'
+    id 'maven-publish'
+}
 
 android {
     compileSdkVersion 33
@@ -42,4 +43,42 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
     implementation 'androidx.recyclerview:recyclerview:1.2.1'
+}
+
+publishing {
+    repositories {
+        maven {
+            url = uri('https://jitpack.io')
+        }
+    }
+
+    publications {
+        maven(MavenPublication) {
+            groupId = 'com.github.xingchen1989' // 设置库的group
+            artifactId = 'ImageSelector' // 替换为你的库的名称
+            version = '1.2.5' // 设置库的版本号
+
+            pom {
+                name = 'ImageSelector' // 替换为你的库的名称
+                description = '图片选择器' // 替换为你的库的描述
+                url = 'https://github.com/xingchen1989/ImageSelector'
+
+                licenses {
+                    license {
+                        name = 'The Apache Software License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'xingchen1989'
+                        name = '星辰' // 替换为你的名字
+                        email = 'lq19890901@gmail.com' // 替换为你的邮箱
+                        url = 'https://github.com/xingchen1989/ImageSelector'
+                    }
+                }
+            }
+        }
+    }
 }
