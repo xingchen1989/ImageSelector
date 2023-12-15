@@ -45,40 +45,15 @@ dependencies {
     implementation 'androidx.recyclerview:recyclerview:1.2.1'
 }
 
-publishing {
-    repositories {
-        maven {
-            url = uri('https://jitpack.io')
-        }
-    }
-
-    publications {
-        maven(MavenPublication) {
-            groupId = 'com.github.xingchen1989' // 设置库的group
-            artifactId = 'ImageSelector' // 替换为你的库的名称
-            version = '1.2.5' // 设置库的版本号
-
-            pom {
-                name = 'ImageSelector' // 替换为你的库的名称
-                description = '图片选择器' // 替换为你的库的描述
-                url = 'https://github.com/xingchen1989/ImageSelector'
-
-                licenses {
-                    license {
-                        name = 'The Apache Software License, Version 2.0'
-                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                    }
-                }
-
-                developers {
-                    developer {
-                        id = 'xingchen1989'
-                        name = '星辰' // 替换为你的名字
-                        email = 'lq19890901@gmail.com' // 替换为你的邮箱
-                        url = 'https://github.com/xingchen1989/ImageSelector'
-                    }
-                }
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                groupId = 'com.github.xingchen1989' // 设置库的group
+                artifactId = 'ImageSelector' // 替换为你的库的名称
+                version = '1.2.5' // 设置库的版本号
             }
         }
     }
 }
+
