@@ -10,7 +10,7 @@ android {
         minSdkVersion 19
         targetSdkVersion 33
         versionCode 12
-        versionName "1.2.5"
+        versionName "1.2.8"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles 'consumer-rules.pro'
@@ -48,10 +48,12 @@ dependencies {
 afterEvaluate {
     publishing {
         publications {
+            // Creates a Maven publication called "release".
             release(MavenPublication) {
-                groupId = 'com.github.xingchen1989' // 设置库的group
-                artifactId = 'ImageSelector' // 替换为你的库的名称
-                version = '1.2.5' // 设置库的版本号
+                from components.release
+                groupId = 'com.github.xingchen1989'
+                artifactId = 'ImageSelector'
+                version = '1.2.8'
             }
         }
     }

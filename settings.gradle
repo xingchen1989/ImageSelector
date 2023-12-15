@@ -17,4 +17,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "ImageSelector"
 include ':app'
-include ':imageselector'
+include ':imagelib'
