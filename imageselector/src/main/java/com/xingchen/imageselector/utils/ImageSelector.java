@@ -2,10 +2,11 @@ package com.xingchen.imageselector.utils;
 
 import android.app.Activity;
 
-import com.xingchen.imageselector.activity.PermissionActivity;
-import com.xingchen.imageselector.entry.RequestConfig;
+import androidx.fragment.app.Fragment;
 
-import java.util.ArrayList;
+import com.xingchen.imageselector.activity.PermissionActivity;
+import com.xingchen.imageselector.entry.PermissionTip;
+import com.xingchen.imageselector.entry.RequestConfig;
 
 /**
  * Depiction:
@@ -44,11 +45,11 @@ public class ImageSelector {
      */
     public static final String SELECT_RESULT = "select_result";
 
-    public static final int SELECTOR_REQUEST_CODE = 0x00000010;
+    public static final int REQ_IMAGE_CODE = 0x00000010;
 
-    public static final int CAMERA_REQUEST_CODE = 0x00000011;
+    public static final int REQ_CAMERA_CODE = 0x00000011;
 
-    public static final int VIDEO_REQUEST_CODE = 0x00000012;
+    public static final int REQ_VIDEO_CODE = 0x00000012;
 
     public static ImageSelectorBuilder builder() {
         return new ImageSelectorBuilder();
@@ -62,13 +63,13 @@ public class ImageSelector {
         }
 
         /**
-         * 是否使用图片剪切功能。默认false。如果使用了图片剪切功能，相册只能单选。
+         * 图片的最大选择数量，小于等于0时，不限数量，isSingle为false时才有用。
          *
-         * @param isCrop
+         * @param maxSelectCount
          * @return
          */
-        public ImageSelectorBuilder setCrop(boolean isCrop) {
-            config.isCrop = isCrop;
+        public ImageSelectorBuilder setMaxSelectCount(int maxSelectCount) {
+            config.maxCount = maxSelectCount;
             return this;
         }
 
@@ -80,6 +81,17 @@ public class ImageSelector {
          */
         public ImageSelectorBuilder setCropRatio(float ratio) {
             config.cropRatio = ratio;
+            return this;
+        }
+
+        /**
+         * 是否使用图片剪切功能。默认false。如果使用了图片剪切功能，相册只能单选。
+         *
+         * @param isCrop
+         * @return
+         */
+        public ImageSelectorBuilder setCrop(boolean isCrop) {
+            config.isCrop = isCrop;
             return this;
         }
 
@@ -128,25 +140,13 @@ public class ImageSelector {
         }
 
         /**
-         * 图片的最大选择数量，小于等于0时，不限数量，isSingle为false时才有用。
+         * 设置请求权限时的额外说明
          *
-         * @param maxSelectCount
+         * @param permissionTip
          * @return
          */
-        public ImageSelectorBuilder setMaxSelectCount(int maxSelectCount) {
-            config.maxCount = maxSelectCount;
-            return this;
-        }
-
-        /**
-         * 接收从外面传进来的已选择的图片列表。当用户原来已经有选择过图片，现在重新打开
-         * 选择器，允许用户把先前选过的图片传进来，并把这些图片默认为选中状态。
-         *
-         * @param selected
-         * @return
-         */
-        public ImageSelectorBuilder setSelected(ArrayList<String> selected) {
-            config.selected = selected;
+        public ImageSelectorBuilder setPermissionTip(PermissionTip permissionTip) {
+            config.permissionTip = permissionTip;
             return this;
         }
 
@@ -158,11 +158,16 @@ public class ImageSelector {
          */
         public void start(Activity activity, int requestCode) {
             PermissionActivity.openActivity(activity, config, requestCode);
-//            if (config.isCrop) {
-//                ClipImageActivity.openActivity(activity, requestCode, config);
-//            } else {
-//                SelectorActivity.openActivity(activity, requestCode, config);
-//            }
+        }
+
+        /**
+         * 打开相册
+         *
+         * @param fragment
+         * @param requestCode
+         */
+        public void start(Fragment fragment, int requestCode) {
+            PermissionActivity.openActivity(fragment, config, requestCode);
         }
     }
 }

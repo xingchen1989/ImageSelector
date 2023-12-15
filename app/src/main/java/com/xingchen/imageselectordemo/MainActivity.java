@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.xingchen.imageselector.entry.PermissionTip;
 import com.xingchen.imageselector.utils.ActionType;
 import com.xingchen.imageselector.utils.ImageSelector;
 
@@ -91,6 +92,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         .setCrop(true)// 设置是否使用图片剪切功能。
                         .setCropRatio(1.0f)// 图片剪切的宽高比,默认1.0f。宽固定为手机屏幕的宽。
                         .setActionType(ActionType.TAKE_PHOTO)// 仅拍照，不打开相册
+                        .setPermissionTip(new PermissionTip("相机权限说明", "需要拍照"))
                         .start(this, REQUEST_CODE);
                 break;
         }

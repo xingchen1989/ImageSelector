@@ -28,7 +28,7 @@ public class PreviewActivity extends AppCompatActivity {
     private TextView tvIndicator;
     private FrameLayout btnConfirm;
     private FixExceptionViewPager fixViewPager;
-    private RequestConfig requestConfig;//图片浏览器的配置信息
+    private RequestConfig config;//图片浏览器的配置信息
 
     public static void openActivity(Activity activity, RequestConfig config, int position, int requestCode) {
         Intent intent = new Intent(activity, PreviewActivity.class);
@@ -50,8 +50,7 @@ public class PreviewActivity extends AppCompatActivity {
      */
     private void initView() {
         ImmersionBar.with(this).titleBar(R.id.cl_title).init();
-        int position = mSelectImages.isEmpty() ? 0 : mTotalImages.indexOf(mSelectImages.get(0));
-        requestConfig = (RequestConfig) getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
+        config = (RequestConfig) getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
         ivBack = findViewById(R.id.iv_back);
         tvSelect = findViewById(R.id.tv_select);
         ivSelect = findViewById(R.id.iv_select);
@@ -60,10 +59,7 @@ public class PreviewActivity extends AppCompatActivity {
         fixViewPager = findViewById(R.id.fix_vp_image);
         fixViewPager.setAdapter(new ImagePagerAdapter(mTotalImages));
         fixViewPager.addOnPageChangeListener(new PageChangeListener());
-        fixViewPager.setCurrentItem(position);
-        btnConfirm.setEnabled(mSelectImages.size() != 0);
-        ivSelect.setSelected(mTotalImages.get(position).isSelected());
-        tvIndicator.setText(String.format("%1$s/%2$s", position + 1, mTotalImages.size()));
+        fixViewPager.setCurrentItem(getIntent().getIntExtra(ImageSelector.POSITION, 0));
     }
 
     private void initListener() {
@@ -92,14 +88,14 @@ public class PreviewActivity extends AppCompatActivity {
         if (mSelectImages.contains(imageData)) {
             mSelectImages.remove(imageData);
             imageData.setSelected(false);
-        } else if (requestConfig.isSingle) {
+        } else if (config.isSingle) {
             for (ImageData item : mSelectImages) {
                 item.setSelected(false);
             }
             mSelectImages.clear();
             mSelectImages.add(imageData);
             imageData.setSelected(true);
-        } else if (requestConfig.maxCount <= 0 || mSelectImages.size() < requestConfig.maxCount) {
+        } else if (config.maxCount <= 0 || mSelectImages.size() < config.maxCount) {
             mSelectImages.add(imageData);
             imageData.setSelected(true);
         }

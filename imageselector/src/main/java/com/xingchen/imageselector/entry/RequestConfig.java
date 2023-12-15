@@ -3,7 +3,6 @@ package com.xingchen.imageselector.entry;
 import com.xingchen.imageselector.utils.ActionType;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 
 /**
  * @Author teach liang
@@ -18,5 +17,5 @@ public class RequestConfig implements Serializable {
     public int maxCount = 0; // 图片的最大选择数量，小于等于0时，不限数量，isSingle为false时才有用。
     public float cropRatio = 1.0f; // 图片剪切的宽高比，宽固定为手机屏幕的宽。
     public ActionType actionType = ActionType.PICK_PHOTO; // 默认选择照片。
-    public ArrayList<String> selected; //接收从外面传进来的已选择的图片列表。当用户原来已经有选择过图片，重新打开选择器，允许用户把先前选过的图片传进来，并把这些图片默认为选中状态。
+    public PermissionTip permissionTip = new PermissionTip(); // 权限请求说明
 }

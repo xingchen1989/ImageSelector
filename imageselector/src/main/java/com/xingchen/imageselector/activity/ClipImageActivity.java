@@ -5,9 +5,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
-import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
+import android.os.Environment;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -15,11 +13,11 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
+import com.gyf.immersionbar.ImmersionBar;
 import com.xingchen.imagecropper.view.CropImageView;
 import com.xingchen.imageselector.R;
 import com.xingchen.imageselector.entry.RequestConfig;
 import com.xingchen.imageselector.utils.ImageSelector;
-import com.xingchen.imageselector.utils.VersionUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -28,8 +26,8 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 public class ClipImageActivity extends AppCompatActivity {
-    private TextView tvCrop;
     private ImageView ivBack;
+    private TextView tvConfirm;
     private CropImageView cropImageView;
     private boolean isCameraImage;
 
@@ -37,7 +35,6 @@ public class ClipImageActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_clip_image);
-        setStatusBarColor();//设置状态栏颜色
         initView();//初始化视图
         initListener();//初始化监听器
     }
@@ -67,48 +64,40 @@ public class ClipImageActivity extends AppCompatActivity {
     }
 
     /**
-     * 修改状态栏颜色
-     */
-    private void setStatusBarColor() {
-        if (VersionUtils.isAndroidL()) {
-            Window window = getWindow();
-            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            window.setStatusBarColor(getResources().getColor(R.color.colorGray));
-        }
-    }
-
-    /**
      * 初始化控件
      */
     private void initView() {
+        ImmersionBar.with(this).titleBar(R.id.cl_title).init();
         ivBack = findViewById(R.id.iv_back);
-        tvCrop = findViewById(R.id.tv_crop);
+        tvConfirm = findViewById(R.id.tv_confirm);
         cropImageView = findViewById(R.id.cropImageView);
         Serializable config = getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
-        SelectorActivity.openActivity(this, config, ImageSelector.SELECTOR_REQUEST_CODE);
+        SelectorActivity.openActivity(this, config, ImageSelector.REQ_IMAGE_CODE);
     }
 
     private void initListener() {
-        ivBack.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+        tvConfirm.setOnClickListener(v -> {
+            Uri uri = saveBitmap(cropImageView.getCroppedImage());
+            if (uri != null) {
+                ArrayList<Uri> imageContentUris = new ArrayList<>();
+                imageContentUris.add(uri);
+                saveImageAndFinish(imageContentUris, isCameraImage);
+            } else {
                 finish();
             }
         });
 
-        tvCrop.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                ArrayList<Uri> imageContentUris = new ArrayList<>();
-                Uri uri = saveBitmap(cropImageView.getCroppedImage());
-                if (uri != null) {
-                    imageContentUris.add(uri);
-                    saveImageAndFinish(imageContentUris, isCameraImage);
-                } else {
-                    finish();
-                }
-            }
-        });
+        ivBack.setOnClickListener(v -> finish());
+    }
+
+    /**
+     * 创建图片文件
+     *
+     * @return
+     */
+    private File createImageFile() {
+        String fileName = String.format("JPEG_%s.jpg", UUID.randomUUID().toString());
+        return new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), fileName);
     }
 
     /**
@@ -117,19 +106,16 @@ public class ClipImageActivity extends AppCompatActivity {
      * @param bitmap
      */
     private Uri saveBitmap(Bitmap bitmap) {
-        if (bitmap != null) {
-            try {
-                File file = new File(getExternalFilesDir("crop"), UUID.randomUUID().toString() + ".jpg");
-                FileOutputStream byteArrayOutputStream = new FileOutputStream(file);
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
-                return Uri.fromFile(file);
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                bitmap.recycle();
-            }
+        try {
+            File file = createImageFile();
+            FileOutputStream fileOutputStream = new FileOutputStream(file);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
+            bitmap.recycle();
+            return Uri.fromFile(file);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
-        return null;
     }
 
     /**
@@ -149,16 +135,14 @@ public class ClipImageActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == ImageSelector.SELECTOR_REQUEST_CODE) {
+        if (requestCode == ImageSelector.REQ_IMAGE_CODE) {
             if (resultCode == RESULT_OK && data != null) {
                 isCameraImage = data.getBooleanExtra(ImageSelector.IS_CAMERA_IMAGE, false);
                 ArrayList<Uri> imageContentUris = data.getParcelableArrayListExtra(ImageSelector.SELECT_RESULT);
                 if (imageContentUris != null && imageContentUris.size() > 0) {
                     cropImageView.setImageURI(imageContentUris.get(0));
                 }
-            } else {
-                finish();
-            }
+            } else finish();
         }
     }
 }
