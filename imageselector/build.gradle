@@ -30,7 +30,6 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-
     implementation 'androidx.appcompat:appcompat:1.4.1'
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
     implementation 'com.github.xingchen1989:ImageCropper:1.0.1'
