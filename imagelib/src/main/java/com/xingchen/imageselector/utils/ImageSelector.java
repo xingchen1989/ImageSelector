@@ -129,7 +129,7 @@ public class ImageSelector {
         }
 
         /**
-         * 是否仅拍照，不打开相册。true时，useCamera也必定为true
+         * 设置请求类型，拍照、选照片、选视频
          *
          * @param actionType
          * @return
