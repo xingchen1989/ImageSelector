@@ -1,5 +1,6 @@
 package com.xingchen.imageselector.adapter;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,80 +13,86 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.xingchen.imageselector.R;
-import com.xingchen.imageselector.entry.ImageFolder;
+import com.xingchen.imageselector.entry.MediaData;
+import com.xingchen.imageselector.entry.MediaFolder;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class FolderAdapter extends RecyclerView.Adapter<FolderAdapter.ViewHolder> {
-    private int mSelectItem;
-    private Context mContext;
-    private OnFolderSelectListener mOnFolderSelectListener;
-    private ArrayList<ImageFolder> mFolders = new ArrayList<>();
+    private ArrayList<MediaFolder> mediaFolders = new ArrayList<>();
+    private OnFolderListener folderListener;
+    private final Context context;
 
-    public FolderAdapter(Context mContext) {
-        this.mContext = mContext;
+    public interface OnFolderListener {
+        void onFolderSelect(MediaFolder folder);
+    }
+
+    public FolderAdapter(Context context) {
+        this.context = context;
     }
 
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.adapter_folder_item, parent, false);
+        LayoutInflater mInflater = LayoutInflater.from(context);
+        View view = mInflater.inflate(R.layout.adapter_folder_item, parent, false);
         return new ViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull final ViewHolder holder, int position) {
-        final ImageFolder folder = mFolders.get(position);
-        holder.tvFolderName.setText(folder.getFolderName());
-        holder.tvFolderSize.setText(mContext.getString(R.string.selector_image_num, folder.getImageList().size()));
-        holder.ivSelect.setVisibility(mSelectItem == position ? View.VISIBLE : View.GONE);
-        if (!folder.getImageList().isEmpty()) {
-            Glide.with(mContext).load(folder.getImageList().get(0).getContentUri()).into(holder.ivImage);
+        MediaFolder mediaFolder = mediaFolders.get(position);
+        List<MediaData> mediaList = mediaFolder.getMediaList();
+        holder.tvFolderName.setText(mediaFolder.getFolderName());
+        holder.ivFolderSelect.setSelected(mediaFolder.isSelected());
+        holder.tvFolderSize.setText(String.format("%1$s项", mediaFolder.getMediaList().size()));
+        if (!mediaList.isEmpty()) {
+            Glide.with(context).load(mediaList.get(0).getContentUri()).into(holder.ivFolderImage);
         }
         holder.itemView.setOnClickListener(v -> {
-            mSelectItem = holder.getAdapterPosition();
-            notifyDataSetChanged();
-            if (mOnFolderSelectListener != null) {
-                mOnFolderSelectListener.OnFolderSelect(folder);
+            this.refresh(mediaFolder);
+            if (folderListener != null) {
+                folderListener.onFolderSelect(mediaFolder);
             }
         });
     }
 
     @Override
     public int getItemCount() {
-        return mFolders == null ? 0 : mFolders.size();
+        return mediaFolders == null ? 0 : mediaFolders.size();
     }
 
-    /**
-     * 刷新列表
-     *
-     * @param folders
-     */
-    public void refresh(ArrayList<ImageFolder> folders) {
-        mFolders = folders;
+    @SuppressLint("NotifyDataSetChanged")
+    public void refresh(ArrayList<MediaFolder> folders) {
+        mediaFolders = folders;
         notifyDataSetChanged();
     }
 
-    public interface OnFolderSelectListener {
-        void OnFolderSelect(ImageFolder folder);
+    @SuppressLint("NotifyDataSetChanged")
+    public void refresh(MediaFolder folder) {
+        for (MediaFolder item : mediaFolders) {
+            item.setSelected(item == folder);
+        }
+        notifyDataSetChanged();
     }
 
-    public void setOnFolderSelectListener(OnFolderSelectListener mOnFolderSelectListener) {
-        this.mOnFolderSelectListener = mOnFolderSelectListener;
+    public void setOnFolderListener(OnFolderListener folderListener) {
+        this.folderListener = folderListener;
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-        ImageView ivImage;
-        ImageView ivSelect;
         TextView tvFolderName;
         TextView tvFolderSize;
+        ImageView ivFolderImage;
+        ImageView ivFolderSelect;
 
         public ViewHolder(View itemView) {
             super(itemView);
-            ivImage = itemView.findViewById(R.id.iv_image);
-            ivSelect = itemView.findViewById(R.id.iv_select);
             tvFolderName = itemView.findViewById(R.id.tv_name);
             tvFolderSize = itemView.findViewById(R.id.tv_size);
+            ivFolderImage = itemView.findViewById(R.id.iv_image);
+            ivFolderSelect = itemView.findViewById(R.id.iv_select);
         }
     }
 }

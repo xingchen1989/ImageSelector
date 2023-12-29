@@ -38,11 +38,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.gyf.immersionbar.ImmersionBar;
 import com.xingchen.imageselector.R;
 import com.xingchen.imageselector.adapter.FolderAdapter;
-import com.xingchen.imageselector.adapter.ImageAdapter;
-import com.xingchen.imageselector.entry.ImageData;
-import com.xingchen.imageselector.entry.ImageFolder;
+import com.xingchen.imageselector.adapter.MediaAdapter;
+import com.xingchen.imageselector.entry.MediaData;
+import com.xingchen.imageselector.entry.MediaFolder;
 import com.xingchen.imageselector.entry.RequestConfig;
-import com.xingchen.imageselector.model.ImageModel;
+import com.xingchen.imageselector.model.MediaModel;
 import com.xingchen.imageselector.utils.ActionType;
 import com.xingchen.imageselector.utils.ImageSelector;
 
@@ -68,11 +68,11 @@ public class SelectorActivity extends AppCompatActivity {
     private FrameLayout btnPreview;
     private RecyclerView rvImage;
     private RecyclerView rvFolder;
-    private ImageAdapter mImageAdapter;
-    private FolderAdapter mFolderAdapter;
-    private Runnable mHideRunnable;
-    private Handler mHideHandler;
-    private Uri mCameraUri;
+    private MediaAdapter mediaAdapter;
+    private FolderAdapter folderAdapter;
+    private Runnable hideRunnable;
+    private Handler hideHandler;
+    private Uri cameraUri;
     private RequestConfig config;
     private boolean isFolderOpen;
 
@@ -118,8 +118,8 @@ public class SelectorActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == ImageSelector.REQ_IMAGE_CODE) {
-            setSelectCount(mImageAdapter.getSelectImages().size());
-            mImageAdapter.notifyDataSetChanged();
+            setSelectCount(mediaAdapter.getSelectImages().size());
+            mediaAdapter.notifyDataSetChanged();
             if (resultCode == RESULT_OK) {
                 confirmSelect();
             }
@@ -127,7 +127,7 @@ public class SelectorActivity extends AppCompatActivity {
             if (resultCode == RESULT_OK) {
                 ArrayList<Uri> imageContentUris = new ArrayList<>();
 //                addPictureToAlbum(mCameraUri);
-                imageContentUris.add(mCameraUri);
+                imageContentUris.add(cameraUri);
                 saveImageAndFinish(imageContentUris, true);
             }
         } else if (requestCode == ImageSelector.REQ_VIDEO_CODE) {
@@ -155,9 +155,9 @@ public class SelectorActivity extends AppCompatActivity {
      * 初始化数据
      */
     private void initData() {
-        mHideHandler = new Handler(Looper.myLooper());
+        hideHandler = new Handler(Looper.myLooper());
         config = (RequestConfig) getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
-        mHideRunnable = () -> ObjectAnimator.ofFloat(tvAddTime, "alpha", 1, 0).start();
+        hideRunnable = () -> ObjectAnimator.ofFloat(tvAddTime, "alpha", 1, 0).start();
     }
 
     /**
@@ -184,7 +184,8 @@ public class SelectorActivity extends AppCompatActivity {
         if (config.actionType == ActionType.PICK_PHOTO) {
             listImageFiles();
         } else if (config.actionType == ActionType.PICK_VIDEO) {
-            openVideoFiles();
+//            openVideoFiles();
+            listVideoFiles();
         } else if (config.actionType == ActionType.TAKE_PHOTO) {
             openDeviceCamera();
         }
@@ -207,10 +208,10 @@ public class SelectorActivity extends AppCompatActivity {
      */
     private void initImageList() {
         GridLayoutManager mLayoutManager = new GridLayoutManager(this, 3);
-        mImageAdapter = new ImageAdapter(this, config);
-        mImageAdapter.setActionListener(new MyItemClickListener());
+        mediaAdapter = new MediaAdapter(this, config);
+        mediaAdapter.setActionListener(new MyItemClickListener());
         rvImage.setLayoutManager(mLayoutManager);
-        rvImage.setAdapter(mImageAdapter);
+        rvImage.setAdapter(mediaAdapter);
         rvImage.setItemAnimator(null);
     }
 
@@ -219,12 +220,12 @@ public class SelectorActivity extends AppCompatActivity {
      */
     private void initFolderList() {
         rvFolder.setLayoutManager(new LinearLayoutManager(SelectorActivity.this));
-        mFolderAdapter = new FolderAdapter(SelectorActivity.this);
-        mFolderAdapter.setOnFolderSelectListener(folder -> {
-            refreshImages(folder);
+        folderAdapter = new FolderAdapter(this);
+        folderAdapter.setOnFolderListener(folder -> {
+            refreshMedias(folder);
             closeFolder();
         });
-        rvFolder.setAdapter(mFolderAdapter);
+        rvFolder.setAdapter(folderAdapter);
     }
 
     /**
@@ -232,11 +233,9 @@ public class SelectorActivity extends AppCompatActivity {
      *
      * @param folder
      */
-    private void refreshImages(ImageFolder folder) {
-        if (folder != null) {
-            tvFolder.setText(folder.getFolderName());
-            mImageAdapter.refresh(folder.getImageList());
-        }
+    private void refreshMedias(MediaFolder folder) {
+        mediaAdapter.refresh(folder.getMediaList());
+        tvFolder.setText(folder.getFolderName());
     }
 
     /**
@@ -286,8 +285,8 @@ public class SelectorActivity extends AppCompatActivity {
      *
      * @param folders
      */
-    private void refreshFolders(ArrayList<ImageFolder> folders) {
-        mFolderAdapter.refresh(folders);
+    private void refreshFolders(ArrayList<MediaFolder> folders) {
+        folderAdapter.refresh(folders);
     }
 
     /**
@@ -317,7 +316,7 @@ public class SelectorActivity extends AppCompatActivity {
      * 预览所选图片
      */
     private void previewImage() {
-        this.previewImage(ImageModel.getInstance().getFirstSelect());
+        this.previewImage(MediaModel.getInstance().getFirstSelect());
     }
 
     /**
@@ -335,7 +334,7 @@ public class SelectorActivity extends AppCompatActivity {
      */
     private void confirmSelect() {
         ArrayList<Uri> imageContentUris = new ArrayList<>();
-        for (ImageData image : mImageAdapter.getSelectImages()) {
+        for (MediaData image : mediaAdapter.getSelectImages()) {
             imageContentUris.add(image.getContentUri());
         }
         saveImageAndFinish(imageContentUris, false);
@@ -359,9 +358,19 @@ public class SelectorActivity extends AppCompatActivity {
      * 加载图片并且更新视图
      */
     private void listImageFiles() {
-        ImageModel.getInstance().asyncLoadImage(this, imageFolders -> runOnUiThread(() -> {
-            refreshImages(imageFolders.get(0));
+        MediaModel.getInstance().asyncLoadImage(this, imageFolders -> runOnUiThread(() -> {
+            refreshMedias(imageFolders.get(0));
             refreshFolders(imageFolders);
+        }));
+    }
+
+    /**
+     * 加载视频并且更新视图
+     */
+    private void listVideoFiles() {
+        MediaModel.getInstance().asyncLoadVideo(this, videoFolders -> runOnUiThread(() -> {
+            refreshMedias(videoFolders.get(0));
+            refreshFolders(videoFolders);
         }));
     }
 
@@ -396,8 +405,8 @@ public class SelectorActivity extends AppCompatActivity {
             File photoFile = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), createImageName());
             Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
             String authority = getPackageName() + ".imageSelectorProvider";
-            mCameraUri = FileProvider.getUriForFile(this, authority, photoFile);
-            intent.putExtra(MediaStore.EXTRA_OUTPUT, mCameraUri);
+            cameraUri = FileProvider.getUriForFile(this, authority, photoFile);
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, cameraUri);
             startActivityForResult(intent, ImageSelector.REQ_CAMERA_CODE);
         }
     }
@@ -426,19 +435,19 @@ public class SelectorActivity extends AppCompatActivity {
         }
     }
 
-    private class MyItemClickListener implements ImageAdapter.ItemActionListener {
+    private class MyItemClickListener implements MediaAdapter.ItemActionListener {
         @Override
         public void OnCameraClick() {
             openDeviceCamera();
         }
 
         @Override
-        public void OnImageClick(ImageData image, int position) {
+        public void OnImageClick(MediaData image, int position) {
             previewImage(position);
         }
 
         @Override
-        public void OnImageSelect(ImageData image, int selectCount) {
+        public void OnImageSelect(MediaData image, int selectCount) {
             setSelectCount(selectCount);
         }
     }
@@ -450,7 +459,7 @@ public class SelectorActivity extends AppCompatActivity {
             switch (newState) {
                 case AbsListView.OnScrollListener.SCROLL_STATE_TOUCH_SCROLL:
                     // 手指触屏拉动准备滚动，只触发一次        顺序: 1
-                    mHideHandler.removeCallbacks(mHideRunnable);
+                    hideHandler.removeCallbacks(hideRunnable);
                     ObjectAnimator.ofFloat(tvAddTime, "alpha", 0, 1).start();
                     break;
                 case AbsListView.OnScrollListener.SCROLL_STATE_FLING:
@@ -458,7 +467,7 @@ public class SelectorActivity extends AppCompatActivity {
                     break;
                 case AbsListView.OnScrollListener.SCROLL_STATE_IDLE:
                     // 整个滚动事件结束，只触发一次            顺序: 4
-                    mHideHandler.postDelayed(mHideRunnable, 1500);
+                    hideHandler.postDelayed(hideRunnable, 1500);
                     break;
                 default:
                     break;
@@ -471,7 +480,7 @@ public class SelectorActivity extends AppCompatActivity {
             try {
                 GridLayoutManager layoutManager = (GridLayoutManager) rvImage.getLayoutManager();
                 int position = Objects.requireNonNull(layoutManager).findFirstVisibleItemPosition();
-                ImageData firstImage = mImageAdapter.getFirstVisibleImage(position);
+                MediaData firstImage = mediaAdapter.getFirstVisibleImage(position);
                 tvAddTime.setText(getImageTime(SelectorActivity.this, firstImage.getAddedTime()));
             } catch (Exception e) {
                 e.printStackTrace();

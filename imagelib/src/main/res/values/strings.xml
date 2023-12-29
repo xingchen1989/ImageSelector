@@ -3,7 +3,7 @@
     <string name="selector_send">确定</string>
     <string name="selector_preview">预览</string>
     <string name="selector_select">选择</string>
-    <string name="selector_image_num">%d张</string>
+    <string name="selector_image_num">%d项</string>
     <string name="selector_all_image">全部图片</string>
     <string name="selector_this_today">今天</string>
     <string name="selector_this_week">本周</string>

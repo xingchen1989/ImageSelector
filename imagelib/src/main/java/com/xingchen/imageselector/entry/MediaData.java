@@ -5,30 +5,30 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 /**
- * 图片实体类
+ * 媒体实体类
  */
-public class ImageData implements Parcelable {
-    private String mimeType;//图片类型
-    private String name;//图片名称
-    private String path;//图片路径
-    private Uri contentUri;//图片uri
-    private long addedTime;//图片首次添加时间
+public class MediaData implements Parcelable {
+    private String mimeType;//媒体类型
+    private String mediaName;//媒体名称
+    private String mediaPath;//媒体路径
+    private Uri contentUri;//媒体uri
+    private long addedTime;//媒体首次添加时间
     private boolean isSelected;//是否选中
 
-    public ImageData(long addedTime, String mimeType, String name, String path, Uri contentUri) {
+    public MediaData(long addedTime, String mimeType, String mediaName, String mediaPath, Uri contentUri) {
         this.addedTime = addedTime;
         this.mimeType = mimeType;
-        this.name = name;
-        this.path = path;
+        this.mediaName = mediaName;
+        this.mediaPath = mediaPath;
         this.contentUri = contentUri;
     }
 
-    public String getName() {
-        return name == null ? "" : name;
+    public String getMediaName() {
+        return mediaName == null ? "" : mediaName;
     }
 
-    public void setName(String name) {
-        this.name = name == null ? "" : name;
+    public void setMediaName(String mediaName) {
+        this.mediaName = mediaName == null ? "" : mediaName;
     }
 
     public String getMimeType() {
@@ -39,12 +39,12 @@ public class ImageData implements Parcelable {
         this.mimeType = mimeType == null ? "" : mimeType;
     }
 
-    public String getPath() {
-        return path == null ? "" : path;
+    public String getMediaPath() {
+        return mediaPath == null ? "" : mediaPath;
     }
 
-    public void setPath(String path) {
-        this.path = path == null ? "" : path;
+    public void setMediaPath(String mediaPath) {
+        this.mediaPath = mediaPath == null ? "" : mediaPath;
     }
 
     public Uri getContentUri() {
@@ -88,27 +88,27 @@ public class ImageData implements Parcelable {
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeLong(this.addedTime);
-        dest.writeString(this.name);
+        dest.writeString(this.mediaName);
         dest.writeString(this.mimeType);
         dest.writeParcelable(this.contentUri, flags);
     }
 
-    private ImageData(Parcel in) {
+    private MediaData(Parcel in) {
         this.addedTime = in.readLong();
-        this.name = in.readString();
+        this.mediaName = in.readString();
         this.mimeType = in.readString();
         this.contentUri = in.readParcelable(Uri.class.getClassLoader());
     }
 
-    public static final Creator<ImageData> CREATOR = new Creator<ImageData>() {
+    public static final Creator<MediaData> CREATOR = new Creator<MediaData>() {
         @Override
-        public ImageData createFromParcel(Parcel source) {
-            return new ImageData(source);
+        public MediaData createFromParcel(Parcel source) {
+            return new MediaData(source);
         }
 
         @Override
-        public ImageData[] newArray(int size) {
-            return new ImageData[size];
+        public MediaData[] newArray(int size) {
+            return new MediaData[size];
         }
     };
 }

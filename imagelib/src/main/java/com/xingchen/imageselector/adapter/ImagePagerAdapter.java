@@ -10,15 +10,15 @@ import androidx.viewpager.widget.PagerAdapter;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.github.chrisbanes.photoview.PhotoView;
-import com.xingchen.imageselector.entry.ImageData;
+import com.xingchen.imageselector.entry.MediaData;
 
 import java.util.List;
 
 public class ImagePagerAdapter extends PagerAdapter {
 
-    private final List<ImageData> mImageList;
+    private final List<MediaData> mImageList;
 
-    public ImagePagerAdapter(List<ImageData> mImageList) {
+    public ImagePagerAdapter(List<MediaData> mImageList) {
         this.mImageList = mImageList;
     }
 

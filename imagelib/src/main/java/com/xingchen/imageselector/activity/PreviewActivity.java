@@ -1,7 +1,7 @@
 package com.xingchen.imageselector.activity;
 
-import static com.xingchen.imageselector.model.ImageModel.mSelectImages;
-import static com.xingchen.imageselector.model.ImageModel.mTotalImages;
+import static com.xingchen.imageselector.model.MediaModel.mSelectMedias;
+import static com.xingchen.imageselector.model.MediaModel.mTotalMedias;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -17,7 +17,7 @@ import com.gyf.immersionbar.ImmersionBar;
 import com.xingchen.imageselector.R;
 import com.xingchen.imageselector.adapter.FixExceptionViewPager;
 import com.xingchen.imageselector.adapter.ImagePagerAdapter;
-import com.xingchen.imageselector.entry.ImageData;
+import com.xingchen.imageselector.entry.MediaData;
 import com.xingchen.imageselector.entry.RequestConfig;
 import com.xingchen.imageselector.utils.ImageSelector;
 
@@ -57,7 +57,7 @@ public class PreviewActivity extends AppCompatActivity {
         btnConfirm = findViewById(R.id.btn_confirm);
         tvIndicator = findViewById(R.id.tv_indicator);
         fixViewPager = findViewById(R.id.fix_vp_image);
-        fixViewPager.setAdapter(new ImagePagerAdapter(mTotalImages));
+        fixViewPager.setAdapter(new ImagePagerAdapter(mTotalMedias));
         fixViewPager.addOnPageChangeListener(new PageChangeListener());
         fixViewPager.setCurrentItem(getIntent().getIntExtra(ImageSelector.POSITION, 0));
     }
@@ -78,26 +78,26 @@ public class PreviewActivity extends AppCompatActivity {
     }
 
     private void updateView(int position) {
-        btnConfirm.setEnabled(mSelectImages.size() != 0);
-        ivSelect.setSelected(mTotalImages.get(position).isSelected());
-        tvIndicator.setText(String.format("%1$s/%2$s", position + 1, mTotalImages.size()));
+        btnConfirm.setEnabled(mSelectMedias.size() != 0);
+        ivSelect.setSelected(mTotalMedias.get(position).isSelected());
+        tvIndicator.setText(String.format("%1$s/%2$s", position + 1, mTotalMedias.size()));
     }
 
     private void updateData(int position) {
-        ImageData imageData = mTotalImages.get(position);
-        if (mSelectImages.contains(imageData)) {
-            mSelectImages.remove(imageData);
-            imageData.setSelected(false);
+        MediaData mediaData = mTotalMedias.get(position);
+        if (mSelectMedias.contains(mediaData)) {
+            mSelectMedias.remove(mediaData);
+            mediaData.setSelected(false);
         } else if (config.isSingle) {
-            for (ImageData item : mSelectImages) {
+            for (MediaData item : mSelectMedias) {
                 item.setSelected(false);
             }
-            mSelectImages.clear();
-            mSelectImages.add(imageData);
-            imageData.setSelected(true);
-        } else if (config.maxCount <= 0 || mSelectImages.size() < config.maxCount) {
-            mSelectImages.add(imageData);
-            imageData.setSelected(true);
+            mSelectMedias.clear();
+            mSelectMedias.add(mediaData);
+            mediaData.setSelected(true);
+        } else if (config.maxCount <= 0 || mSelectMedias.size() < config.maxCount) {
+            mSelectMedias.add(mediaData);
+            mediaData.setSelected(true);
         }
     }
 
