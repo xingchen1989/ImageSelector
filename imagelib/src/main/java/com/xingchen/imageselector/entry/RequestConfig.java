@@ -18,4 +18,12 @@ public class RequestConfig implements Serializable {
     public float cropRatio = 1.0f; // 图片剪切的宽高比，宽固定为手机屏幕的宽。
     public ActionType actionType = ActionType.PICK_PHOTO; // 默认选择照片。
     public PermissionTip permissionTip = new PermissionTip(); // 权限请求说明
+
+    public String getMediaTitle() {
+        if (actionType == ActionType.PICK_VIDEO) {
+            return "视频";
+        } else {
+            return "图片";
+        }
+    }
 }

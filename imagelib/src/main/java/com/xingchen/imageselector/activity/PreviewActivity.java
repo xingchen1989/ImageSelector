@@ -6,29 +6,21 @@ import static com.xingchen.imageselector.model.MediaModel.mTotalMedias;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.widget.FrameLayout;
-import android.widget.ImageView;
-import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.viewpager.widget.ViewPager;
 
 import com.gyf.immersionbar.ImmersionBar;
 import com.xingchen.imageselector.R;
-import com.xingchen.imageselector.adapter.FixExceptionViewPager;
 import com.xingchen.imageselector.adapter.ImagePagerAdapter;
+import com.xingchen.imageselector.databinding.ActivityMediaPreviewBinding;
 import com.xingchen.imageselector.entry.MediaData;
 import com.xingchen.imageselector.entry.RequestConfig;
 import com.xingchen.imageselector.utils.ImageSelector;
 
 public class PreviewActivity extends AppCompatActivity {
-    private ImageView ivBack;
-    private ImageView ivSelect;
-    private TextView tvSelect;
-    private TextView tvIndicator;
-    private FrameLayout btnConfirm;
-    private FixExceptionViewPager fixViewPager;
-    private RequestConfig config;//图片浏览器的配置信息
+    private ActivityMediaPreviewBinding binding;
+    private RequestConfig requestConfig;//图片浏览器的配置信息
 
     public static void openActivity(Activity activity, RequestConfig config, int position, int requestCode) {
         Intent intent = new Intent(activity, PreviewActivity.class);
@@ -40,7 +32,8 @@ public class PreviewActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_preview);
+        binding = ActivityMediaPreviewBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
         initView();
         initListener();
     }
@@ -50,37 +43,31 @@ public class PreviewActivity extends AppCompatActivity {
      */
     private void initView() {
         ImmersionBar.with(this).titleBar(R.id.cl_title).init();
-        config = (RequestConfig) getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
-        ivBack = findViewById(R.id.iv_back);
-        tvSelect = findViewById(R.id.tv_select);
-        ivSelect = findViewById(R.id.iv_select);
-        btnConfirm = findViewById(R.id.btn_confirm);
-        tvIndicator = findViewById(R.id.tv_indicator);
-        fixViewPager = findViewById(R.id.fix_vp_image);
-        fixViewPager.setAdapter(new ImagePagerAdapter(mTotalMedias));
-        fixViewPager.addOnPageChangeListener(new PageChangeListener());
-        fixViewPager.setCurrentItem(getIntent().getIntExtra(ImageSelector.POSITION, 0));
+        requestConfig = (RequestConfig) getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
+        binding.fixVpImage.setAdapter(new ImagePagerAdapter(mTotalMedias));
+        binding.fixVpImage.addOnPageChangeListener(new PageChangeListener());
+        binding.fixVpImage.setCurrentItem(getIntent().getIntExtra(ImageSelector.POSITION, 0));
     }
 
     private void initListener() {
-        tvSelect.setOnClickListener(v -> {
-            updateData(fixViewPager.getCurrentItem());
-            updateView(fixViewPager.getCurrentItem());
+        binding.tvSelect.setOnClickListener(v -> {
+            updateData(binding.fixVpImage.getCurrentItem());
+            updateView(binding.fixVpImage.getCurrentItem());
         });
 
-        btnConfirm.setOnClickListener(v -> {
+        binding.btnConfirm.setOnClickListener(v -> {
             Intent intent = new Intent();
             setResult(RESULT_OK, intent);
             finish();
         });
 
-        ivBack.setOnClickListener(v -> finish());
+        binding.ivBack.setOnClickListener(v -> finish());
     }
 
     private void updateView(int position) {
-        btnConfirm.setEnabled(mSelectMedias.size() != 0);
-        ivSelect.setSelected(mTotalMedias.get(position).isSelected());
-        tvIndicator.setText(String.format("%1$s/%2$s", position + 1, mTotalMedias.size()));
+        binding.btnConfirm.setEnabled(mSelectMedias.size() != 0);
+        binding.ivSelect.setSelected(mTotalMedias.get(position).isSelected());
+        binding.tvIndicator.setText(String.format("%1$s/%2$s", position + 1, mTotalMedias.size()));
     }
 
     private void updateData(int position) {
@@ -88,14 +75,14 @@ public class PreviewActivity extends AppCompatActivity {
         if (mSelectMedias.contains(mediaData)) {
             mSelectMedias.remove(mediaData);
             mediaData.setSelected(false);
-        } else if (config.isSingle) {
+        } else if (requestConfig.isSingle) {
             for (MediaData item : mSelectMedias) {
                 item.setSelected(false);
             }
             mSelectMedias.clear();
             mSelectMedias.add(mediaData);
             mediaData.setSelected(true);
-        } else if (config.maxCount <= 0 || mSelectMedias.size() < config.maxCount) {
+        } else if (requestConfig.maxCount <= 0 || mSelectMedias.size() < requestConfig.maxCount) {
             mSelectMedias.add(mediaData);
             mediaData.setSelected(true);
         }

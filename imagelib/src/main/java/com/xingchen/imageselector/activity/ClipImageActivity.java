@@ -34,7 +34,7 @@ public class ClipImageActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_clip_image);
+        setContentView(R.layout.activity_image_clip);
         initView();//初始化视图
         initListener();//初始化监听器
     }

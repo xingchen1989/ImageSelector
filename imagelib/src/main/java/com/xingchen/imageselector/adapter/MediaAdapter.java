@@ -40,7 +40,7 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
         if (viewType == TYPE_CAMERA) {
             return new ViewHolder(mInflater.inflate(R.layout.adapter_camera_item, parent, false));
         } else {
-            return new ViewHolder(mInflater.inflate(R.layout.adapter_images_item, parent, false));
+            return new ViewHolder(mInflater.inflate(R.layout.adapter_media_item, parent, false));
         }
     }
 
@@ -50,7 +50,7 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
             holder.bindCameraItem();
         } else {
             MediaData image = getImage(position);
-            holder.bindImageItem(context, image, position);
+            holder.bindImageItem(image, position);
         }
     }
 
@@ -82,7 +82,7 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
         mediaData.setSelected(true);
         notifyItemChanged(position);
         if (actionListener != null) {
-            actionListener.OnImageSelect(mediaData, mSelectMedias.size());
+            actionListener.OnMediaSelect(mediaData, mSelectMedias.size());
         }
     }
 
@@ -96,7 +96,7 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
         mediaData.setSelected(false);
         notifyItemChanged(position);
         if (actionListener != null) {
-            actionListener.OnImageSelect(mediaData, mSelectMedias.size());
+            actionListener.OnMediaSelect(mediaData, mSelectMedias.size());
         }
     }
 
@@ -142,7 +142,7 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
      */
     private void onItemClick(MediaData mediaData, int position) {
         if (config.canPreview && actionListener != null) {
-            actionListener.OnImageClick(mediaData, position);
+            actionListener.OnMediaClick(mediaData, position);
         } else {
             onItemSelect(mediaData, position);
         }
@@ -191,20 +191,20 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
     public interface ItemActionListener {
         void OnCameraClick();
 
-        void OnImageClick(MediaData image, int position);
+        void OnMediaClick(MediaData media, int position);
 
-        void OnImageSelect(MediaData image, int selectCount);
+        void OnMediaSelect(MediaData media, int selectCount);
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
         ImageView ivCamera;
-        ImageView ivImage;
+        ImageView ivMedia;
         ImageView ivSelect;
         ImageView ivTypeGif;
 
         public ViewHolder(View itemView) {
             super(itemView);
-            ivImage = itemView.findViewById(R.id.iv_image);
+            ivMedia = itemView.findViewById(R.id.iv_media);
             ivCamera = itemView.findViewById(R.id.iv_camera);
             ivSelect = itemView.findViewById(R.id.iv_select);
             ivTypeGif = itemView.findViewById(R.id.iv_type_gif);
@@ -218,8 +218,8 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
             });
         }
 
-        public void bindImageItem(Context context, MediaData mediaData, int position) {
-            Glide.with(context).load(mediaData.getContentUri()).into(ivImage);
+        private void bindImageItem(MediaData mediaData, int position) {
+            Glide.with(context).load(mediaData.getContentUri()).into(ivMedia);
             ivTypeGif.setVisibility(mediaData.isGif() ? View.VISIBLE : View.GONE);
             ivSelect.setSelected(mediaData.isSelected());
             ivSelect.setOnClickListener(view -> onItemSelect(mediaData, position));

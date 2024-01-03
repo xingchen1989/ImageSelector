@@ -20,9 +20,6 @@ import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.view.View;
 import android.widget.AbsListView;
-import android.widget.FrameLayout;
-import android.widget.ImageView;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -39,6 +36,7 @@ import com.gyf.immersionbar.ImmersionBar;
 import com.xingchen.imageselector.R;
 import com.xingchen.imageselector.adapter.FolderAdapter;
 import com.xingchen.imageselector.adapter.MediaAdapter;
+import com.xingchen.imageselector.databinding.ActivityMediaSelectorBinding;
 import com.xingchen.imageselector.entry.MediaData;
 import com.xingchen.imageselector.entry.MediaFolder;
 import com.xingchen.imageselector.entry.RequestConfig;
@@ -58,23 +56,15 @@ import java.util.Objects;
 
 public class SelectorActivity extends AppCompatActivity {
     private static final int REQ_PERMISSION_CAMERA = 0x00000011;
-    private View contentMask;
-    private TextView tvAddTime;
-    private TextView tvConfirm;
-    private TextView tvFolder;
-    private TextView tvPreview;
-    private ImageView ivBack;
-    private FrameLayout btnConfirm;
-    private FrameLayout btnPreview;
-    private RecyclerView rvImage;
-    private RecyclerView rvFolder;
-    private MediaAdapter mediaAdapter;
+    private ActivityMediaSelectorBinding binding;
+    private RequestConfig requestConfig;
     private FolderAdapter folderAdapter;
+    private MediaAdapter mediaAdapter;
     private Runnable hideRunnable;
     private Handler hideHandler;
     private Uri cameraUri;
-    private RequestConfig config;
     private boolean isFolderOpen;
+
 
     /**
      * 启动图片选择器
@@ -103,13 +93,12 @@ public class SelectorActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_image_selector);
+        binding = ActivityMediaSelectorBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
         initData();//初始化数据
         initView();//初始化视图
         initLogic();//初始化逻辑
         initListener();//初始化监听事件
-        initImageList();//初始化图片列表
-        initFolderList();//初始化文件夹列表
         setSelectCount(0);//初始化选中的数量为0
     }
 
@@ -156,8 +145,8 @@ public class SelectorActivity extends AppCompatActivity {
      */
     private void initData() {
         hideHandler = new Handler(Looper.myLooper());
-        config = (RequestConfig) getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
-        hideRunnable = () -> ObjectAnimator.ofFloat(tvAddTime, "alpha", 1, 0).start();
+        requestConfig = (RequestConfig) getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
+        hideRunnable = () -> ObjectAnimator.ofFloat(binding.tvTime, "alpha", 1, 0).start();
     }
 
     /**
@@ -165,28 +154,31 @@ public class SelectorActivity extends AppCompatActivity {
      */
     private void initView() {
         ImmersionBar.with(this).titleBar(R.id.cl_title).init();
-        ivBack = findViewById(R.id.iv_back);
-        rvImage = findViewById(R.id.rv_image);
-        rvFolder = findViewById(R.id.rv_folder);
-        tvFolder = findViewById(R.id.tv_folder);
-        tvAddTime = findViewById(R.id.tv_time);
-        tvPreview = findViewById(R.id.tv_preview);
-        tvConfirm = findViewById(R.id.tv_confirm);
-        btnConfirm = findViewById(R.id.btn_confirm);
-        btnPreview = findViewById(R.id.btn_preview);
-        contentMask = findViewById(R.id.view_mask);
+
+        GridLayoutManager mLayoutManager = new GridLayoutManager(this, 3);
+        mediaAdapter = new MediaAdapter(this, requestConfig);
+        mediaAdapter.setActionListener(new MyMediaListener());
+        binding.rvMedia.setLayoutManager(mLayoutManager);
+        binding.rvMedia.setItemAnimator(null);
+        binding.rvMedia.setAdapter(mediaAdapter);
+
+        binding.rvFolder.setLayoutManager(new LinearLayoutManager(SelectorActivity.this));
+        folderAdapter = new FolderAdapter(this);
+        folderAdapter.setOnFolderListener(new MyFolderListener());
+        binding.rvFolder.setAdapter(folderAdapter);
+
+        binding.tvTitle.setText(requestConfig.getMediaTitle());
     }
 
     /**
      * 初始化逻辑
      */
     private void initLogic() {
-        if (config.actionType == ActionType.PICK_PHOTO) {
+        if (requestConfig.actionType == ActionType.PICK_PHOTO) {
             listImageFiles();
-        } else if (config.actionType == ActionType.PICK_VIDEO) {
-//            openVideoFiles();
+        } else if (requestConfig.actionType == ActionType.PICK_VIDEO) {
             listVideoFiles();
-        } else if (config.actionType == ActionType.TAKE_PHOTO) {
+        } else if (requestConfig.actionType == ActionType.TAKE_PHOTO) {
             openDeviceCamera();
         }
     }
@@ -195,37 +187,21 @@ public class SelectorActivity extends AppCompatActivity {
      * 初始化监听事件
      */
     private void initListener() {
-        ivBack.setOnClickListener(v -> finish());
-        contentMask.setOnClickListener(v -> closeFolder());
-        btnPreview.setOnClickListener(v -> previewImage());
-        btnConfirm.setOnClickListener(v -> confirmSelect());
-        tvFolder.setOnClickListener(v -> animationFolder());
-        rvImage.addOnScrollListener(new MyScrollListener());
+        binding.ivBack.setOnClickListener(v -> finish());
+        binding.viewMask.setOnClickListener(v -> closeFolder());
+        binding.tvFolder.setOnClickListener(v -> animationFolder());
+        binding.btnPreview.setOnClickListener(v -> previewImage());
+        binding.btnConfirm.setOnClickListener(v -> confirmSelect());
+        binding.rvMedia.addOnScrollListener(new MyScrollListener());
     }
 
     /**
-     * 初始化图片列表
+     * 刷新文件夹列表
+     *
+     * @param folders
      */
-    private void initImageList() {
-        GridLayoutManager mLayoutManager = new GridLayoutManager(this, 3);
-        mediaAdapter = new MediaAdapter(this, config);
-        mediaAdapter.setActionListener(new MyItemClickListener());
-        rvImage.setLayoutManager(mLayoutManager);
-        rvImage.setAdapter(mediaAdapter);
-        rvImage.setItemAnimator(null);
-    }
-
-    /**
-     * 初始化文件夹列表
-     */
-    private void initFolderList() {
-        rvFolder.setLayoutManager(new LinearLayoutManager(SelectorActivity.this));
-        folderAdapter = new FolderAdapter(this);
-        folderAdapter.setOnFolderListener(folder -> {
-            refreshMedias(folder);
-            closeFolder();
-        });
-        rvFolder.setAdapter(folderAdapter);
+    private void refreshFolders(ArrayList<MediaFolder> folders) {
+        folderAdapter.refresh(folders);
     }
 
     /**
@@ -235,7 +211,7 @@ public class SelectorActivity extends AppCompatActivity {
      */
     private void refreshMedias(MediaFolder folder) {
         mediaAdapter.refresh(folder.getMediaList());
-        tvFolder.setText(folder.getFolderName());
+        binding.tvFolder.setText(folder.getFolderName());
     }
 
     /**
@@ -243,13 +219,14 @@ public class SelectorActivity extends AppCompatActivity {
      */
     private void openFolder() {
         isFolderOpen = true;
-        contentMask.setVisibility(View.VISIBLE);
-        ObjectAnimator animator = ObjectAnimator.ofFloat(rvFolder, "translationY", rvFolder.getHeight(), 0);
+        binding.viewMask.setVisibility(View.VISIBLE);
+        float[] params = {binding.rvFolder.getHeight(), 0};
+        ObjectAnimator animator = ObjectAnimator.ofFloat(binding.rvFolder, "translationY", params);
         animator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationStart(Animator animation) {
                 super.onAnimationStart(animation);
-                rvFolder.setVisibility(View.VISIBLE);
+                binding.rvFolder.setVisibility(View.VISIBLE);
             }
         });
         animator.start();
@@ -260,13 +237,14 @@ public class SelectorActivity extends AppCompatActivity {
      */
     private void closeFolder() {
         isFolderOpen = false;
-        contentMask.setVisibility(View.INVISIBLE);
-        ObjectAnimator animator = ObjectAnimator.ofFloat(rvFolder, "translationY", 0, rvFolder.getHeight());
+        binding.viewMask.setVisibility(View.INVISIBLE);
+        float[] params = {0, binding.rvFolder.getHeight()};
+        ObjectAnimator animator = ObjectAnimator.ofFloat(binding.rvFolder, "translationY", params);
         animator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
                 super.onAnimationEnd(animation);
-                rvFolder.setVisibility(View.GONE);
+                binding.rvFolder.setVisibility(View.GONE);
             }
         });
         animator.start();
@@ -281,15 +259,6 @@ public class SelectorActivity extends AppCompatActivity {
     }
 
     /**
-     * 刷新文件夹列表
-     *
-     * @param folders
-     */
-    private void refreshFolders(ArrayList<MediaFolder> folders) {
-        folderAdapter.refresh(folders);
-    }
-
-    /**
      * 设置选中的数量
      *
      * @param count
@@ -297,18 +266,18 @@ public class SelectorActivity extends AppCompatActivity {
     private void setSelectCount(int count) {
         String confirm = getString(R.string.selector_send);
         String preview = getString(R.string.selector_preview);
-        btnConfirm.setEnabled(count != 0);
-        btnPreview.setEnabled(count != 0);
-        if (config.isSingle) {
-            tvConfirm.setText(R.string.selector_send);
-            tvPreview.setText(R.string.selector_preview);
-        } else if (config.maxCount <= 0) {
-            tvConfirm.setText(String.format(confirm + "(%1$s)", count));
-            tvPreview.setText(String.format(preview + "(%1$s)", count));
+        binding.btnConfirm.setEnabled(count != 0);
+        binding.btnPreview.setEnabled(count != 0);
+        if (requestConfig.isSingle) {
+            binding.tvConfirm.setText(R.string.selector_send);
+            binding.tvPreview.setText(R.string.selector_preview);
+        } else if (requestConfig.maxCount <= 0) {
+            binding.tvPreview.setText(String.format(preview + "(%1$s)", count));
+            binding.tvConfirm.setText(String.format(confirm + "(%1$s)", count));
         } else {
-            int maxCount = config.maxCount;
-            tvPreview.setText(String.format(preview + "(%1$s)", count));
-            tvConfirm.setText(String.format(confirm + "(%1$s/%2$s)", count, maxCount));
+            int maxCount = requestConfig.maxCount;
+            binding.tvPreview.setText(String.format(preview + "(%1$s)", count));
+            binding.tvConfirm.setText(String.format(confirm + "(%1$s/%2$s)", count, maxCount));
         }
     }
 
@@ -325,8 +294,8 @@ public class SelectorActivity extends AppCompatActivity {
      * @param position
      */
     private void previewImage(int position) {
-        int index = config.useCamera ? position - 1 : position;
-        PreviewActivity.openActivity(this, config, index, ImageSelector.REQ_IMAGE_CODE);
+        int index = requestConfig.useCamera ? position - 1 : position;
+        PreviewActivity.openActivity(this, requestConfig, index, ImageSelector.REQ_IMAGE_CODE);
     }
 
     /**
@@ -435,19 +404,27 @@ public class SelectorActivity extends AppCompatActivity {
         }
     }
 
-    private class MyItemClickListener implements MediaAdapter.ItemActionListener {
+    public class MyFolderListener implements FolderAdapter.OnFolderListener {
+        @Override
+        public void onFolderSelect(MediaFolder folder) {
+            refreshMedias(folder);
+            closeFolder();
+        }
+    }
+
+    private class MyMediaListener implements MediaAdapter.ItemActionListener {
         @Override
         public void OnCameraClick() {
             openDeviceCamera();
         }
 
         @Override
-        public void OnImageClick(MediaData image, int position) {
+        public void OnMediaClick(MediaData media, int position) {
             previewImage(position);
         }
 
         @Override
-        public void OnImageSelect(MediaData image, int selectCount) {
+        public void OnMediaSelect(MediaData media, int selectCount) {
             setSelectCount(selectCount);
         }
     }
@@ -460,7 +437,7 @@ public class SelectorActivity extends AppCompatActivity {
                 case AbsListView.OnScrollListener.SCROLL_STATE_TOUCH_SCROLL:
                     // 手指触屏拉动准备滚动，只触发一次        顺序: 1
                     hideHandler.removeCallbacks(hideRunnable);
-                    ObjectAnimator.ofFloat(tvAddTime, "alpha", 0, 1).start();
+                    ObjectAnimator.ofFloat(binding.tvTime, "alpha", 0, 1).start();
                     break;
                 case AbsListView.OnScrollListener.SCROLL_STATE_FLING:
                     // 持续滚动开始，只触发一次                顺序: 2
@@ -478,10 +455,10 @@ public class SelectorActivity extends AppCompatActivity {
         public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
             super.onScrolled(recyclerView, dx, dy);
             try {
-                GridLayoutManager layoutManager = (GridLayoutManager) rvImage.getLayoutManager();
+                GridLayoutManager layoutManager = (GridLayoutManager) binding.rvMedia.getLayoutManager();
                 int position = Objects.requireNonNull(layoutManager).findFirstVisibleItemPosition();
                 MediaData firstImage = mediaAdapter.getFirstVisibleImage(position);
-                tvAddTime.setText(getImageTime(SelectorActivity.this, firstImage.getAddedTime()));
+                binding.tvTime.setText(getImageTime(SelectorActivity.this, firstImage.getAddedTime()));
             } catch (Exception e) {
                 e.printStackTrace();
             }
