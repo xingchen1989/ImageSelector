@@ -14,13 +14,6 @@ import com.xingchen.imageselector.entry.RequestConfig;
  */
 public class ImageSelector {
     /**
-     * 是否是来自于相机拍照的图片，
-     * 只有本次调用相机拍出来的照片，返回时才为true。
-     * 当为true时，图片返回当结果有且只有一张图片。
-     */
-    public static final String IS_CAMERA_IMAGE = "is_camera_image";
-
-    /**
      * 是否单选
      */
     public static final String IS_SINGLE = "is_single";

@@ -1,6 +1,7 @@
 package com.xingchen.imageselector.activity;
 
 import static com.xingchen.imageselector.utils.DateTimeUtil.getImageTime;
+import static com.xingchen.imageselector.utils.ImageSelector.REQ_IMAGE_CODE;
 
 import android.Manifest;
 import android.animation.Animator;
@@ -8,7 +9,6 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -16,7 +16,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.view.View;
 import android.widget.AbsListView;
@@ -45,8 +44,6 @@ import com.xingchen.imageselector.utils.ActionType;
 import com.xingchen.imageselector.utils.ImageSelector;
 
 import java.io.File;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -106,8 +103,8 @@ public class SelectorActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == ImageSelector.REQ_IMAGE_CODE) {
-            setSelectCount(mediaAdapter.getSelectImages().size());
+        if (requestCode == REQ_IMAGE_CODE) {
+            setSelectCount(MediaModel.mSelectMedias.size());
             mediaAdapter.notifyDataSetChanged();
             if (resultCode == RESULT_OK) {
                 confirmSelect();
@@ -115,15 +112,21 @@ public class SelectorActivity extends AppCompatActivity {
         } else if (requestCode == ImageSelector.REQ_CAMERA_CODE) {
             if (resultCode == RESULT_OK) {
                 ArrayList<Uri> imageContentUris = new ArrayList<>();
-//                addPictureToAlbum(mCameraUri);
                 imageContentUris.add(cameraUri);
-                saveImageAndFinish(imageContentUris, true);
+                saveImageAndFinish(imageContentUris);
             }
         } else if (requestCode == ImageSelector.REQ_VIDEO_CODE) {
             if (resultCode == RESULT_OK && data != null) {
                 ArrayList<Uri> videoContentUris = new ArrayList<>();
-                videoContentUris.add(data.getData());
-                saveImageAndFinish(videoContentUris, false);
+                if (data.getData() != null) {
+                    videoContentUris.add(data.getData());
+                } else if (data.getClipData() != null) {
+                    int count = data.getClipData().getItemCount();
+                    for (int i = 0; i < count; i++) {
+                        videoContentUris.add(data.getClipData().getItemAt(i).getUri());
+                    }
+                }
+                saveImageAndFinish(videoContentUris);
             } else finish();
         }
     }
@@ -153,7 +156,7 @@ public class SelectorActivity extends AppCompatActivity {
      * 初始化控件
      */
     private void initView() {
-        ImmersionBar.with(this).titleBar(R.id.cl_title).init();
+        ImmersionBar.with(this).titleBar(binding.clTitle).init();
 
         GridLayoutManager mLayoutManager = new GridLayoutManager(this, 3);
         mediaAdapter = new MediaAdapter(this, requestConfig);
@@ -294,8 +297,7 @@ public class SelectorActivity extends AppCompatActivity {
      * @param position
      */
     private void previewImage(int position) {
-        int index = requestConfig.useCamera ? position - 1 : position;
-        PreviewActivity.openActivity(this, requestConfig, index, ImageSelector.REQ_IMAGE_CODE);
+        PreviewActivity.openActivity(this, requestConfig, position, REQ_IMAGE_CODE);
     }
 
     /**
@@ -303,22 +305,20 @@ public class SelectorActivity extends AppCompatActivity {
      */
     private void confirmSelect() {
         ArrayList<Uri> imageContentUris = new ArrayList<>();
-        for (MediaData image : mediaAdapter.getSelectImages()) {
+        for (MediaData image : MediaModel.mSelectMedias) {
             imageContentUris.add(image.getContentUri());
         }
-        saveImageAndFinish(imageContentUris, false);
+        saveImageAndFinish(imageContentUris);
     }
 
     /**
      * 保存图片，并把选中的图片通过Intent传递给上一个Activity
      *
      * @param imageContentUris
-     * @param isCameraImage
      */
-    private void saveImageAndFinish(ArrayList<Uri> imageContentUris, boolean isCameraImage) {
+    private void saveImageAndFinish(ArrayList<Uri> imageContentUris) {
         Intent intent = new Intent();
         intent.putParcelableArrayListExtra(ImageSelector.SELECT_RESULT, imageContentUris);
-        intent.putExtra(ImageSelector.IS_CAMERA_IMAGE, isCameraImage);
         setResult(RESULT_OK, intent);
         finish();
     }
@@ -344,37 +344,87 @@ public class SelectorActivity extends AppCompatActivity {
     }
 
     /**
-     * 创建图片名称
+     * 创建图片文件
      *
      * @return
      */
-    private String createImageName() {
+    private File createImageFile() {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
-        return String.format("JPEG_%s.jpg", dateFormat.format(new Date()));
+        String fileName = String.format("JPEG_%s.jpg", dateFormat.format(new Date()));
+        return new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), fileName);
+    }
+
+    /**
+     * 创建视频文件
+     *
+     * @return
+     */
+    private File createVideoFile() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
+        String fileName = String.format("VIDEO_%s.mp4", dateFormat.format(new Date()));
+        return new File(getExternalFilesDir(Environment.DIRECTORY_MOVIES), fileName);
+    }
+
+    /**
+     * 打开图片列表
+     */
+    private void openImageFiles() {
+        Intent intent = new Intent(Intent.ACTION_PICK);
+        intent.setType("image/*");
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        startActivityForResult(intent, ImageSelector.REQ_VIDEO_CODE);
     }
 
     /**
      * 打开视频列表
      */
     private void openVideoFiles() {
-        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
-        //intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+        Intent intent = new Intent(Intent.ACTION_PICK);
+        intent.setType("video/*");
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
         startActivityForResult(intent, ImageSelector.REQ_VIDEO_CODE);
+    }
+
+    /**
+     * 根据配置打开相机拍照或排视频
+     */
+    private void openDeviceCamera() {
+        if (requestConfig.actionType == ActionType.PICK_VIDEO) {
+            openVideoCamera();
+        } else {
+            openImageCamera();
+        }
     }
 
     /**
      * 打开相机拍照
      */
-    private void openDeviceCamera() {
+    private void openImageCamera() {
         int checkResult = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
         if (checkResult != PackageManager.PERMISSION_GRANTED) {
             String[] permissions = new String[]{Manifest.permission.CAMERA};
             ActivityCompat.requestPermissions(this, permissions, REQ_PERMISSION_CAMERA);
         } else {
-            File photoFile = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), createImageName());
             Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            String authority = getPackageName() + ".imageSelectorProvider";
-            cameraUri = FileProvider.getUriForFile(this, authority, photoFile);
+            String authority = getPackageName() + ".fileProvider";
+            cameraUri = FileProvider.getUriForFile(this, authority, createImageFile());
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, cameraUri);
+            startActivityForResult(intent, ImageSelector.REQ_CAMERA_CODE);
+        }
+    }
+
+    /**
+     * 打开相机拍视频
+     */
+    private void openVideoCamera() {
+        int checkResult = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
+        if (checkResult != PackageManager.PERMISSION_GRANTED) {
+            String[] permissions = new String[]{Manifest.permission.CAMERA};
+            ActivityCompat.requestPermissions(this, permissions, REQ_PERMISSION_CAMERA);
+        } else {
+            Intent intent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+            String authority = getPackageName() + ".fileProvider";
+            cameraUri = FileProvider.getUriForFile(this, authority, createVideoFile());
             intent.putExtra(MediaStore.EXTRA_OUTPUT, cameraUri);
             startActivityForResult(intent, ImageSelector.REQ_CAMERA_CODE);
         }
@@ -382,10 +432,8 @@ public class SelectorActivity extends AppCompatActivity {
 
     /**
      * 向相册添加图片
-     *
-     * @param inputUri
      */
-    private void addPictureToAlbum(Uri inputUri) {
+    /*private void addPictureToAlbum(Uri inputUri) {
         try {
             //创建ContentValues对象，准备插入数据
             ContentValues contentValues = new ContentValues();
@@ -402,7 +450,7 @@ public class SelectorActivity extends AppCompatActivity {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
+    }*/
 
     public class MyFolderListener implements FolderAdapter.OnFolderListener {
         @Override

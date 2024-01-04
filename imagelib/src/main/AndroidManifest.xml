@@ -32,7 +32,7 @@
 
         <provider
             android:name=".provider.ImageProvider"
-            android:authorities="${applicationId}.imageSelectorProvider"
+            android:authorities="${applicationId}.fileProvider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data

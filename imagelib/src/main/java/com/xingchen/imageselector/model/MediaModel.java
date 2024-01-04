@@ -156,7 +156,7 @@ public class MediaModel {
                 //获取图片的id
                 long id = mCursor.getLong(mCursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID));
                 //获取图片时间
-                long time = mCursor.getLong(mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED));
+                long addTime = mCursor.getLong(mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED));
                 //获取图片路径
                 String path = mCursor.getString(mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA));
                 //获取图片类型
@@ -166,7 +166,7 @@ public class MediaModel {
                 //获取图片uri
                 Uri uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
                 //在这里可以处理每张图片的ID、名称和URI
-                mTotalMedias.add(new MediaData(time, type, name, path, uri));
+                mTotalMedias.add(new MediaData(type, name, path, uri, addTime));
             }
             mCursor.close();
         }
@@ -182,6 +182,7 @@ public class MediaModel {
                 MediaStore.Video.Media._ID,
                 MediaStore.Video.Media.DATA,
                 MediaStore.Video.Media.MIME_TYPE,
+                MediaStore.Video.Media.DURATION,
                 MediaStore.Video.Media.DATE_ADDED,
                 MediaStore.Video.Media.DISPLAY_NAME,
         };
@@ -193,8 +194,10 @@ public class MediaModel {
             while (mCursor.moveToNext()) {
                 //获取视频的id
                 long id = mCursor.getLong(mCursor.getColumnIndexOrThrow(MediaStore.Video.Media._ID));
+                //获取视频时长
+                long duration = mCursor.getLong(mCursor.getColumnIndexOrThrow(MediaStore.Video.Media.DURATION));
                 //获取视频时间
-                long time = mCursor.getLong(mCursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATE_ADDED));
+                long addTime = mCursor.getLong(mCursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATE_ADDED));
                 //获取视频路径
                 String path = mCursor.getString(mCursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATA));
                 //获取视频类型
@@ -204,7 +207,7 @@ public class MediaModel {
                 //获取视频uri
                 Uri uri = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id);
                 //在这里可以处理每个视频的ID、名称和URI
-                mTotalMedias.add(new MediaData(time, type, name, path, uri));
+                mTotalMedias.add(new MediaData(type, name, path, uri, addTime, duration));
             }
             mCursor.close();
         }

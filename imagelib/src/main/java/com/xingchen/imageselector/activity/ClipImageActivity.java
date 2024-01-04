@@ -6,16 +6,13 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
-import android.widget.ImageView;
-import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
 import com.gyf.immersionbar.ImmersionBar;
-import com.xingchen.imagecropper.view.CropImageView;
-import com.xingchen.imageselector.R;
+import com.xingchen.imageselector.databinding.ActivityImageClipBinding;
 import com.xingchen.imageselector.entry.RequestConfig;
 import com.xingchen.imageselector.utils.ImageSelector;
 
@@ -26,15 +23,13 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 public class ClipImageActivity extends AppCompatActivity {
-    private ImageView ivBack;
-    private TextView tvConfirm;
-    private CropImageView cropImageView;
-    private boolean isCameraImage;
+    private ActivityImageClipBinding binding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_image_clip);
+        binding = ActivityImageClipBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
         initView();//初始化视图
         initListener();//初始化监听器
     }
@@ -67,27 +62,24 @@ public class ClipImageActivity extends AppCompatActivity {
      * 初始化控件
      */
     private void initView() {
-        ImmersionBar.with(this).titleBar(R.id.cl_title).init();
-        ivBack = findViewById(R.id.iv_back);
-        tvConfirm = findViewById(R.id.tv_confirm);
-        cropImageView = findViewById(R.id.cropImageView);
+        ImmersionBar.with(this).titleBar(binding.clTitle).init();
         Serializable config = getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
         SelectorActivity.openActivity(this, config, ImageSelector.REQ_IMAGE_CODE);
     }
 
     private void initListener() {
-        tvConfirm.setOnClickListener(v -> {
-            Uri uri = saveBitmap(cropImageView.getCroppedImage());
+        binding.tvConfirm.setOnClickListener(v -> {
+            Uri uri = saveBitmap(binding.cropImageView.getCroppedImage());
             if (uri != null) {
                 ArrayList<Uri> imageContentUris = new ArrayList<>();
                 imageContentUris.add(uri);
-                saveImageAndFinish(imageContentUris, isCameraImage);
+                saveImageAndFinish(imageContentUris);
             } else {
                 finish();
             }
         });
 
-        ivBack.setOnClickListener(v -> finish());
+        binding.ivBack.setOnClickListener(v -> finish());
     }
 
     /**
@@ -122,12 +114,10 @@ public class ClipImageActivity extends AppCompatActivity {
      * 保存图片，并把选中的图片通过Intent传递给上一个Activity
      *
      * @param imageContentUris
-     * @param isCameraImage
      */
-    private void saveImageAndFinish(ArrayList<Uri> imageContentUris, boolean isCameraImage) {
+    private void saveImageAndFinish(ArrayList<Uri> imageContentUris) {
         Intent intent = new Intent();
         intent.putParcelableArrayListExtra(ImageSelector.SELECT_RESULT, imageContentUris);
-        intent.putExtra(ImageSelector.IS_CAMERA_IMAGE, isCameraImage);
         setResult(RESULT_OK, intent);
         finish();
     }
@@ -137,10 +127,9 @@ public class ClipImageActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == ImageSelector.REQ_IMAGE_CODE) {
             if (resultCode == RESULT_OK && data != null) {
-                isCameraImage = data.getBooleanExtra(ImageSelector.IS_CAMERA_IMAGE, false);
                 ArrayList<Uri> imageContentUris = data.getParcelableArrayListExtra(ImageSelector.SELECT_RESULT);
                 if (imageContentUris != null && imageContentUris.size() > 0) {
-                    cropImageView.setImageURI(imageContentUris.get(0));
+                    binding.cropImageView.setImageURI(imageContentUris.get(0));
                 }
             } else finish();
         }

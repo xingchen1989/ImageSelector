@@ -1,22 +1,26 @@
 package com.xingchen.imageselector.entry;
 
 import android.net.Uri;
-import android.os.Parcel;
-import android.os.Parcelable;
 
 /**
  * 媒体实体类
  */
-public class MediaData implements Parcelable {
+public class MediaData {
     private String mimeType;//媒体类型
     private String mediaName;//媒体名称
     private String mediaPath;//媒体路径
     private Uri contentUri;//媒体uri
-    private long addedTime;//媒体首次添加时间
+    private long addedTime;//添加时间
+    private long duration;//视频时长
     private boolean isSelected;//是否选中
 
-    public MediaData(long addedTime, String mimeType, String mediaName, String mediaPath, Uri contentUri) {
+    public MediaData(String mimeType, String mediaName, String mediaPath, Uri contentUri, long addedTime) {
+        this(mimeType, mediaName, mediaPath, contentUri, addedTime, 0);
+    }
+
+    public MediaData(String mimeType, String mediaName, String mediaPath, Uri contentUri, long addedTime, long duration) {
         this.addedTime = addedTime;
+        this.duration = duration;
         this.mimeType = mimeType;
         this.mediaName = mediaName;
         this.mediaPath = mediaPath;
@@ -63,6 +67,14 @@ public class MediaData implements Parcelable {
         this.addedTime = addedTime;
     }
 
+    public long getDuration() {
+        return duration;
+    }
+
+    public void setDuration(long duration) {
+        this.duration = duration;
+    }
+
     public boolean isSelected() {
         return isSelected;
     }
@@ -79,36 +91,4 @@ public class MediaData implements Parcelable {
     public boolean isGif() {
         return "image/gif".equals(mimeType);
     }
-
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeLong(this.addedTime);
-        dest.writeString(this.mediaName);
-        dest.writeString(this.mimeType);
-        dest.writeParcelable(this.contentUri, flags);
-    }
-
-    private MediaData(Parcel in) {
-        this.addedTime = in.readLong();
-        this.mediaName = in.readString();
-        this.mimeType = in.readString();
-        this.contentUri = in.readParcelable(Uri.class.getClassLoader());
-    }
-
-    public static final Creator<MediaData> CREATOR = new Creator<MediaData>() {
-        @Override
-        public MediaData createFromParcel(Parcel source) {
-            return new MediaData(source);
-        }
-
-        @Override
-        public MediaData[] newArray(int size) {
-            return new MediaData[size];
-        }
-    };
 }

@@ -89,6 +89,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.btn_take_and_clip:// 拍照并剪裁
                 ImageSelector.builder()
+                        .useCamera(true) // 设置是否使用拍照
                         .setCrop(true)// 设置是否使用图片剪切功能。
                         .setCropRatio(1.0f)// 图片剪切的宽高比,默认1.0f。宽固定为手机屏幕的宽。
                         .setActionType(ActionType.TAKE_PHOTO)// 仅拍照，不打开相册
@@ -106,8 +107,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         if (requestCode == REQUEST_CODE) {
             ArrayList<Uri> imageContentUris = data.getParcelableArrayListExtra(ImageSelector.SELECT_RESULT);
-            boolean isCameraImage = data.getBooleanExtra(ImageSelector.IS_CAMERA_IMAGE, false);
-//            Log.d("ImageSelector", "是否是拍照图片：" + isCameraImage);
             mImageAdapter.refresh(imageContentUris);
         }
     }
