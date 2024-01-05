@@ -1,11 +1,15 @@
 package com.xingchen.imageselector.activity;
 
+import static com.xingchen.imageselector.utils.ImageSelector.REQ_IMAGE_CODE;
+import static com.xingchen.imageselector.utils.ImageSelector.SELECT_RESULT;
+
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -62,9 +66,11 @@ public class ClipImageActivity extends AppCompatActivity {
      * 初始化控件
      */
     private void initView() {
-        ImmersionBar.with(this).titleBar(binding.clTitle).init();
-        Serializable config = getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
-        SelectorActivity.openActivity(this, config, ImageSelector.REQ_IMAGE_CODE);
+        new Handler().post(() -> {
+            ImmersionBar.with(this).titleBar(binding.clTitle).init();
+            Serializable config = getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
+            SelectorActivity.openActivity(ClipImageActivity.this, config, REQ_IMAGE_CODE);
+        });
     }
 
     private void initListener() {
@@ -117,7 +123,7 @@ public class ClipImageActivity extends AppCompatActivity {
      */
     private void saveImageAndFinish(ArrayList<Uri> imageContentUris) {
         Intent intent = new Intent();
-        intent.putParcelableArrayListExtra(ImageSelector.SELECT_RESULT, imageContentUris);
+        intent.putParcelableArrayListExtra(SELECT_RESULT, imageContentUris);
         setResult(RESULT_OK, intent);
         finish();
     }
@@ -125,9 +131,9 @@ public class ClipImageActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == ImageSelector.REQ_IMAGE_CODE) {
+        if (requestCode == REQ_IMAGE_CODE) {
             if (resultCode == RESULT_OK && data != null) {
-                ArrayList<Uri> imageContentUris = data.getParcelableArrayListExtra(ImageSelector.SELECT_RESULT);
+                ArrayList<Uri> imageContentUris = data.getParcelableArrayListExtra(SELECT_RESULT);
                 if (imageContentUris != null && imageContentUris.size() > 0) {
                     binding.cropImageView.setImageURI(imageContentUris.get(0));
                 }

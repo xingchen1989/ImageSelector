@@ -42,8 +42,9 @@ public class MediaModel {
     public void asyncLoadImage(Context context, DataCallback callback) {
         new Thread(() -> {
             if (callback != null) {
-                resetDataSource();
-                scanImages(context.getContentResolver());
+                mTotalMedias.clear();
+                mSelectMedias.clear();
+                scanImages(context, context.getContentResolver());
                 callback.onSuccess(splitFolder("全部图片", mTotalMedias));
             }
         }).start();
@@ -58,8 +59,9 @@ public class MediaModel {
     public void asyncLoadVideo(Context context, DataCallback callback) {
         new Thread(() -> {
             if (callback != null) {
-                resetDataSource();
-                scanVideos(context.getContentResolver());
+                mTotalMedias.clear();
+                mSelectMedias.clear();
+                scanVideos(context, context.getContentResolver());
                 callback.onSuccess(splitFolder("全部视频", mTotalMedias));
             }
         }).start();
@@ -73,14 +75,6 @@ public class MediaModel {
     public int getFirstSelect() {
         if (mSelectMedias.isEmpty()) return 0;
         else return mTotalMedias.indexOf(mSelectMedias.get(0));
-    }
-
-    /**
-     * 重置数据源
-     */
-    private void resetDataSource() {
-        mTotalMedias.clear();
-        mSelectMedias.clear();
     }
 
     /**
@@ -107,13 +101,13 @@ public class MediaModel {
      * @return
      */
     private MediaFolder getMediaFolder(MediaData mediaData, List<MediaFolder> mediaFolders) {
-        String name = getFolderName(mediaData.getMediaPath());
+        String category = mediaData.getCategory();
         for (MediaFolder mediaFolder : mediaFolders) {
-            if (name.equals(mediaFolder.getFolderName())) {
+            if (category.equals(mediaFolder.getFolderName())) {
                 return mediaFolder;
             }
         }
-        MediaFolder newFolder = new MediaFolder(name);
+        MediaFolder newFolder = new MediaFolder(category);
         mediaFolders.add(newFolder);
         return newFolder;
     }
@@ -139,13 +133,12 @@ public class MediaModel {
      *
      * @return
      */
-    private void scanImages(ContentResolver contentResolver) {
+    private void scanImages(Context context, ContentResolver contentResolver) {
         String[] projection = new String[]{
                 MediaStore.Images.Media._ID,
                 MediaStore.Images.Media.DATA,
-                MediaStore.Images.Media.MIME_TYPE,
                 MediaStore.Images.Media.DATE_ADDED,
-                MediaStore.Images.Media.DISPLAY_NAME,
+                MediaStore.Images.Media.MIME_TYPE,
         };
         Cursor mCursor = contentResolver.query(
                 MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
@@ -158,15 +151,13 @@ public class MediaModel {
                 //获取图片时间
                 long addTime = mCursor.getLong(mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED));
                 //获取图片路径
-                String path = mCursor.getString(mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA));
+                String mediaPath = mCursor.getString(mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA));
                 //获取图片类型
                 String type = mCursor.getString(mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.MIME_TYPE));
-                //获取图片名
-                String name = mCursor.getString(mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME));
                 //获取图片uri
-                Uri uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
+                Uri mediaUri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
                 //在这里可以处理每张图片的ID、名称和URI
-                mTotalMedias.add(new MediaData(type, name, path, uri, addTime));
+                mTotalMedias.add(new MediaData(getFolderName(mediaPath), type, mediaUri, addTime));
             }
             mCursor.close();
         }
@@ -177,14 +168,13 @@ public class MediaModel {
      *
      * @param contentResolver
      */
-    private void scanVideos(ContentResolver contentResolver) {
+    private void scanVideos(Context context, ContentResolver contentResolver) {
         String[] projection = new String[]{
                 MediaStore.Video.Media._ID,
                 MediaStore.Video.Media.DATA,
-                MediaStore.Video.Media.MIME_TYPE,
                 MediaStore.Video.Media.DURATION,
                 MediaStore.Video.Media.DATE_ADDED,
-                MediaStore.Video.Media.DISPLAY_NAME,
+                MediaStore.Video.Media.MIME_TYPE,
         };
         Cursor mCursor = contentResolver.query(
                 MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
@@ -199,15 +189,13 @@ public class MediaModel {
                 //获取视频时间
                 long addTime = mCursor.getLong(mCursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATE_ADDED));
                 //获取视频路径
-                String path = mCursor.getString(mCursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATA));
+                String mediaPath = mCursor.getString(mCursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATA));
                 //获取视频类型
                 String type = mCursor.getString(mCursor.getColumnIndexOrThrow(MediaStore.Video.Media.MIME_TYPE));
-                //获取视频名
-                String name = mCursor.getString(mCursor.getColumnIndexOrThrow(MediaStore.Video.Media.DISPLAY_NAME));
                 //获取视频uri
-                Uri uri = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id);
+                Uri mediaUri = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id);
                 //在这里可以处理每个视频的ID、名称和URI
-                mTotalMedias.add(new MediaData(type, name, path, uri, addTime, duration));
+                mTotalMedias.add(new MediaData(getFolderName(mediaPath), type, mediaUri, addTime, duration));
             }
             mCursor.close();
         }

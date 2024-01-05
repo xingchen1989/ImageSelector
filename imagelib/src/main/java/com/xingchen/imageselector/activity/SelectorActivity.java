@@ -338,6 +338,7 @@ public class SelectorActivity extends AppCompatActivity {
      */
     private void listVideoFiles() {
         MediaModel.getInstance().asyncLoadVideo(this, videoFolders -> runOnUiThread(() -> {
+            System.out.println("kaishi##################");
             refreshMedias(videoFolders.get(0));
             refreshFolders(videoFolders);
         }));
