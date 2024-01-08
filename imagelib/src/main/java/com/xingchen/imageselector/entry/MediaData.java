@@ -2,10 +2,12 @@ package com.xingchen.imageselector.entry;
 
 import android.net.Uri;
 
+import java.io.Serializable;
+
 /**
  * 媒体实体类
  */
-public class MediaData {
+public class MediaData implements Serializable {
     private String mimeType;//媒体类型
     private String category;//媒体目录
     private Uri contentUri;//媒体uri
@@ -13,8 +15,12 @@ public class MediaData {
     private long duration;//视频时长
     private boolean isSelected;//是否选中
 
+    public MediaData(String mimeType) {
+        this("", mimeType, null, 0);
+    }
+
     public MediaData(String category, String mimeType, Uri contentUri, long addedTime) {
-        this(mimeType, category, contentUri, addedTime, 0);
+        this(category, mimeType, contentUri, addedTime, 0);
     }
 
     public MediaData(String category, String mimeType, Uri contentUri, long addedTime, long duration) {

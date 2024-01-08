@@ -19,11 +19,6 @@ public class ImageSelector {
     public static final String IS_SINGLE = "is_single";
 
     /**
-     * 初始位置
-     */
-    public static final String POSITION = "position";
-
-    /**
      * 最大的图片选择数
      */
     public static final String MAX_COUNT = "max_count";
@@ -32,6 +27,11 @@ public class ImageSelector {
      * 图片选中器的配置
      */
     public static final String KEY_CONFIG = "key_config";
+
+    /**
+     * 图片选中器的数据配置
+     */
+    public static final String DATA_CONFIG = "data_config";
 
     /**
      * 图片选择的结果

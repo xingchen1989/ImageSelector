@@ -12,8 +12,9 @@ import androidx.viewpager.widget.ViewPager;
 
 import com.gyf.immersionbar.ImmersionBar;
 import com.xingchen.imageselector.R;
-import com.xingchen.imageselector.adapter.ImagePagerAdapter;
+import com.xingchen.imageselector.adapter.MediaPagerAdapter;
 import com.xingchen.imageselector.databinding.ActivityMediaPreviewBinding;
+import com.xingchen.imageselector.entry.DataConfig;
 import com.xingchen.imageselector.entry.MediaData;
 import com.xingchen.imageselector.entry.RequestConfig;
 import com.xingchen.imageselector.utils.ImageSelector;
@@ -22,10 +23,10 @@ public class PreviewActivity extends AppCompatActivity {
     private ActivityMediaPreviewBinding binding;
     private RequestConfig requestConfig;//图片浏览器的配置信息
 
-    public static void openActivity(Activity activity, RequestConfig config, int position, int requestCode) {
+    public static void openActivity(Activity activity, DataConfig dataConfig, RequestConfig requestConfig, int requestCode) {
         Intent intent = new Intent(activity, PreviewActivity.class);
-        intent.putExtra(ImageSelector.POSITION, position);
-        intent.putExtra(ImageSelector.KEY_CONFIG, config);
+        intent.putExtra(ImageSelector.KEY_CONFIG, requestConfig);
+        intent.putExtra(ImageSelector.DATA_CONFIG, dataConfig);
         activity.startActivityForResult(intent, requestCode);
     }
 
@@ -44,9 +45,9 @@ public class PreviewActivity extends AppCompatActivity {
     private void initView() {
         ImmersionBar.with(this).titleBar(R.id.cl_title).init();
         requestConfig = (RequestConfig) getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
-        binding.fixVpImage.setAdapter(new ImagePagerAdapter(mTotalMedias));
+        binding.fixVpImage.setAdapter(new MediaPagerAdapter(mTotalMedias));
         binding.fixVpImage.addOnPageChangeListener(new PageChangeListener());
-        binding.fixVpImage.setCurrentItem(getIntent().getIntExtra(ImageSelector.POSITION, 0));
+        binding.fixVpImage.setCurrentItem(getIntent().getIntExtra(ImageSelector.DATA_CONFIG, 0));
     }
 
     private void initListener() {

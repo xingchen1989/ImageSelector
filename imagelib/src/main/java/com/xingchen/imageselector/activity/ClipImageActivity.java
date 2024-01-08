@@ -9,7 +9,6 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -66,11 +65,9 @@ public class ClipImageActivity extends AppCompatActivity {
      * 初始化控件
      */
     private void initView() {
-        new Handler().post(() -> {
-            ImmersionBar.with(this).titleBar(binding.clTitle).init();
-            Serializable config = getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
-            SelectorActivity.openActivity(ClipImageActivity.this, config, REQ_IMAGE_CODE);
-        });
+        ImmersionBar.with(this).titleBar(binding.clTitle).init();
+        Serializable config = getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
+        SelectorActivity.openActivity(ClipImageActivity.this, config, REQ_IMAGE_CODE);
     }
 
     private void initListener() {

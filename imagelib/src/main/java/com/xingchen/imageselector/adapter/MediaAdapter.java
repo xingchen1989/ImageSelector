@@ -32,7 +32,7 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
     private final Context context;
     private final RequestConfig requestConfig;
     private ItemActionListener actionListener;//图片操作监听器
-    private ArrayList<MediaData> mediaSources = new ArrayList<>();//媒体数据源
+    private final ArrayList<MediaData> mediaSources = new ArrayList<>();//媒体数据源
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("mm:ss");
 
     public MediaAdapter(Context context, RequestConfig requestConfig) {
@@ -42,13 +42,13 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
 
     @Override
     public int getItemCount() {
-        return mediaSources == null ? 0 : mediaSources.size();
+        return mediaSources.size();
     }
 
     @Override
     public int getItemViewType(int position) {
         String mimeType = mediaSources.get(position).getMimeType();
-        if (requestConfig.useCamera && position == 0) {
+        if (mimeType.startsWith("camera")) {
             return TYPE_CAMERA;
         } else if (mimeType.startsWith("video")) {
             return TYPE_VIDEO;
@@ -153,7 +153,8 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
      */
     private void onItemClick(MediaData mediaData, int position) {
         if (requestConfig.canPreview && actionListener != null) {
-            actionListener.OnMediaClick(mediaData, position);
+            int realPosition = requestConfig.useCamera ? position - 1 : position;
+            actionListener.OnMediaClick(mediaData, realPosition);
         } else {
             onItemSelect(mediaData, position);
         }
@@ -175,7 +176,11 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
      */
     @SuppressLint("NotifyDataSetChanged")
     public void refresh(ArrayList<MediaData> mediaSources) {
-        this.mediaSources = mediaSources;
+        this.mediaSources.clear();
+        this.mediaSources.addAll(mediaSources);
+        if (requestConfig.useCamera) {
+            this.mediaSources.add(0, new MediaData("camera"));
+        }
         notifyDataSetChanged();
     }
 

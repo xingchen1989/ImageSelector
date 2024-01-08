@@ -1,5 +1,6 @@
 package com.xingchen.imageselector.activity;
 
+import static com.xingchen.imageselector.model.MediaModel.mTotalMedias;
 import static com.xingchen.imageselector.utils.DateTimeUtil.getImageTime;
 import static com.xingchen.imageselector.utils.ImageSelector.REQ_IMAGE_CODE;
 
@@ -36,6 +37,7 @@ import com.xingchen.imageselector.R;
 import com.xingchen.imageselector.adapter.FolderAdapter;
 import com.xingchen.imageselector.adapter.MediaAdapter;
 import com.xingchen.imageselector.databinding.ActivityMediaSelectorBinding;
+import com.xingchen.imageselector.entry.DataConfig;
 import com.xingchen.imageselector.entry.MediaData;
 import com.xingchen.imageselector.entry.MediaFolder;
 import com.xingchen.imageselector.entry.RequestConfig;
@@ -61,7 +63,6 @@ public class SelectorActivity extends AppCompatActivity {
     private Handler hideHandler;
     private Uri cameraUri;
     private boolean isFolderOpen;
-
 
     /**
      * 启动图片选择器
@@ -297,7 +298,8 @@ public class SelectorActivity extends AppCompatActivity {
      * @param position
      */
     private void previewImage(int position) {
-        PreviewActivity.openActivity(this, requestConfig, position, REQ_IMAGE_CODE);
+        DataConfig dataConfig = new DataConfig(position, mTotalMedias);
+        PreviewActivity.openActivity(this, dataConfig, requestConfig, REQ_IMAGE_CODE);
     }
 
     /**
@@ -338,7 +340,6 @@ public class SelectorActivity extends AppCompatActivity {
      */
     private void listVideoFiles() {
         MediaModel.getInstance().asyncLoadVideo(this, videoFolders -> runOnUiThread(() -> {
-            System.out.println("kaishi##################");
             refreshMedias(videoFolders.get(0));
             refreshFolders(videoFolders);
         }));
