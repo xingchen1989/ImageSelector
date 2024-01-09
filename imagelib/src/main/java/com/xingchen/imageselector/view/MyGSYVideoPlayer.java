@@ -25,6 +25,6 @@ public class MyGSYVideoPlayer extends StandardGSYVideoPlayer {
 
     @Override
     public int getLayoutId() {
-        return R.layout.video_fixed_cropped;
+        return R.layout.selector_video_fixed;
     }
 }
