@@ -15,7 +15,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
 import com.gyf.immersionbar.ImmersionBar;
-import com.xingchen.imageselector.databinding.ActivityImageClipBinding;
+import com.xingchen.imageselector.databinding.ActivityImageCropBinding;
 import com.xingchen.imageselector.entry.RequestConfig;
 import com.xingchen.imageselector.utils.ImageSelector;
 
@@ -26,12 +26,12 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 public class ClipImageActivity extends AppCompatActivity {
-    private ActivityImageClipBinding binding;
+    private ActivityImageCropBinding binding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        binding = ActivityImageClipBinding.inflate(getLayoutInflater());
+        binding = ActivityImageCropBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         initView();//初始化视图
         initListener();//初始化监听器
