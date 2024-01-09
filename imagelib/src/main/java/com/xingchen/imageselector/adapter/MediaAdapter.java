@@ -93,7 +93,7 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
         mediaData.setSelected(true);
         notifyItemChanged(position);
         if (actionListener != null) {
-            actionListener.OnMediaSelect(mediaData, mSelectMedias.size());
+            actionListener.onMediaSelect(mediaData, mSelectMedias.size());
         }
     }
 
@@ -107,7 +107,7 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
         mediaData.setSelected(false);
         notifyItemChanged(position);
         if (actionListener != null) {
-            actionListener.OnMediaSelect(mediaData, mSelectMedias.size());
+            actionListener.onMediaSelect(mediaData, mSelectMedias.size());
         }
     }
 
@@ -152,11 +152,11 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
      * @param position
      */
     private void onItemClick(MediaData mediaData, int position) {
+        int realPosition = requestConfig.useCamera ? position - 1 : position;
         if (requestConfig.canPreview && actionListener != null) {
-            int realPosition = requestConfig.useCamera ? position - 1 : position;
-            actionListener.OnMediaClick(mediaData, realPosition);
+            actionListener.onMediaClick(mediaData, realPosition);
         } else {
-            onItemSelect(mediaData, position);
+            onItemSelect(mediaData, realPosition);
         }
     }
 
@@ -165,7 +165,7 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
      */
     private void onCameraClick() {
         if (actionListener != null) {
-            actionListener.OnCameraClick();
+            actionListener.onCameraClick();
         }
     }
 
@@ -191,13 +191,11 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
      * @return
      */
     public MediaData getFirstVisibleImage(int position) {
-        if (position < 0 || mediaSources.isEmpty()) {
-            return null;
-        }
-        if (requestConfig.useCamera) {
-            return mediaSources.get(position > 0 ? position - 1 : 0);
-        } else {
-            return mediaSources.get(position);
+        MediaData mediaData=mediaSources.get(position);
+        if(mediaData.getMimeType().startsWith("camera")){
+            return mediaSources.get(position+1);
+        }else {
+            return mediaData;
         }
     }
 
@@ -206,11 +204,11 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
     }
 
     public interface ItemActionListener {
-        void OnCameraClick();
+        void onCameraClick();
 
-        void OnMediaClick(MediaData media, int position);
+        void onMediaClick(MediaData media, int position);
 
-        void OnMediaSelect(MediaData media, int selectCount);
+        void onMediaSelect(MediaData media, int selectCount);
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {

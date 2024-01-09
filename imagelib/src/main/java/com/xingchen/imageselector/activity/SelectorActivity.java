@@ -37,7 +37,6 @@ import com.xingchen.imageselector.R;
 import com.xingchen.imageselector.adapter.FolderAdapter;
 import com.xingchen.imageselector.adapter.MediaAdapter;
 import com.xingchen.imageselector.databinding.ActivityMediaSelectorBinding;
-import com.xingchen.imageselector.entry.DataConfig;
 import com.xingchen.imageselector.entry.MediaData;
 import com.xingchen.imageselector.entry.MediaFolder;
 import com.xingchen.imageselector.entry.RequestConfig;
@@ -298,8 +297,7 @@ public class SelectorActivity extends AppCompatActivity {
      * @param position
      */
     private void previewImage(int position) {
-        DataConfig dataConfig = new DataConfig(position, mTotalMedias);
-        PreviewActivity.openActivity(this, dataConfig, requestConfig, REQ_IMAGE_CODE);
+        PreviewActivity.openActivity(this, requestConfig, position, REQ_IMAGE_CODE);
     }
 
     /**
@@ -464,17 +462,17 @@ public class SelectorActivity extends AppCompatActivity {
 
     private class MyMediaListener implements MediaAdapter.ItemActionListener {
         @Override
-        public void OnCameraClick() {
+        public void onCameraClick() {
             openDeviceCamera();
         }
 
         @Override
-        public void OnMediaClick(MediaData media, int position) {
-            previewImage(position);
+        public void onMediaClick(MediaData media, int position) {
+            previewImage(mTotalMedias.indexOf(media));
         }
 
         @Override
-        public void OnMediaSelect(MediaData media, int selectCount) {
+        public void onMediaSelect(MediaData media, int selectCount) {
             setSelectCount(selectCount);
         }
     }

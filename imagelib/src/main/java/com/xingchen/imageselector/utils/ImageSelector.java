@@ -29,9 +29,9 @@ public class ImageSelector {
     public static final String KEY_CONFIG = "key_config";
 
     /**
-     * 图片选中器的数据配置
+     * 图片选中器的位置
      */
-    public static final String DATA_CONFIG = "data_config";
+    public static final String KEY_POSITION = "key_position";
 
     /**
      * 图片选择的结果
