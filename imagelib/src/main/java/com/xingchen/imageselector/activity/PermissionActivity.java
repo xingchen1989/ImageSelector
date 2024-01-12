@@ -2,12 +2,13 @@ package com.xingchen.imageselector.activity;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.widget.TextView;
-import android.widget.Toast;
+import android.provider.Settings;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -18,43 +19,53 @@ import androidx.fragment.app.Fragment;
 
 import com.gyf.immersionbar.ImmersionBar;
 import com.xingchen.imageselector.R;
+import com.xingchen.imageselector.databinding.ActivityPermissionTipBinding;
+import com.xingchen.imageselector.entry.PermissionTip;
 import com.xingchen.imageselector.entry.RequestConfig;
 import com.xingchen.imageselector.utils.ActionType;
 import com.xingchen.imageselector.utils.ImageSelector;
 
 public class PermissionActivity extends AppCompatActivity {
-    private static final int REQ_PERMISSION_CAMERA = 0x00000011;
-    private static final int REQ_PERMISSION_VIDEO = 0x00000012;
-    private static final int REQ_PERMISSION_READ = 0x00000013;
+    private static final int REQUEST_CAMERA = 0x00000011;
+    private static final int REQUEST_VIDEO = 0x00000012;
+    private static final int REQUEST_IMAGE = 0x00000013;
+    private static final int REQUEST_APPLY = 0x00000014;
+    private ActivityPermissionTipBinding binding;
+    private RequestConfig requestConfig;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_permission_tip);
-        ImmersionBar.with(this).init();
-        initPermissionTip();
+        binding = ActivityPermissionTipBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+        initView();
         initPermissionLogic();
+    }
+
+    private void initView() {
+        ImmersionBar.with(this).init();
+        requestConfig = (RequestConfig) getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_OK) {
-            setResult(RESULT_OK, data);
-        }
+        if (resultCode == RESULT_OK) setResult(RESULT_OK, data);
+        else if (requestCode == REQUEST_APPLY) initPermissionLogic();
         finish();
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQ_PERMISSION_READ) {
-            processPermissionResult(grantResults, "请到“设置”>“应用”>“权限”中配置存储权限");
-        } else if (requestCode == REQ_PERMISSION_VIDEO) {
-            processPermissionResult(grantResults, "请到“设置”>“应用”>“权限”中配置存储权限");
-        } else if (requestCode == REQ_PERMISSION_CAMERA) {
-            processPermissionResult(grantResults, "请到“设置”>“应用”>“权限”中配置相机权限");
-        }
+        PermissionTip permissionTip = requestConfig.permissionTip;
+        if (checkGrantResults(grantResults)) initPermissionLogic();
+        else if (requestCode == REQUEST_IMAGE)
+            showExceptionDialog(permissionTip.getStorageDetailMsg());
+        else if (requestCode == REQUEST_VIDEO)
+            showExceptionDialog(permissionTip.getStorageDetailMsg());
+        else if (requestCode == REQUEST_CAMERA)
+            showExceptionDialog(permissionTip.getCameraDetailMsg());
     }
 
     public static void openActivity(Activity activity, RequestConfig config, int requestCode) {
@@ -69,28 +80,26 @@ public class PermissionActivity extends AppCompatActivity {
         fragment.startActivityForResult(intent, requestCode);
     }
 
-    private void initPermissionTip() {
-        RequestConfig config = (RequestConfig) getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
-        TextView permissionTitle = findViewById(R.id.tv_permission_title);
-        TextView permissionContent = findViewById(R.id.tv_permission_content);
-        permissionTitle.setText(config.permissionTip.title);
-        permissionContent.setText(config.permissionTip.content);
-    }
-
     private void initPermissionLogic() {
-        RequestConfig config = (RequestConfig) getIntent().getSerializableExtra(ImageSelector.KEY_CONFIG);
-        if (config.actionType == ActionType.PICK_PHOTO) {// 选照片
-            if (checkPermissions(getImagePermission(), REQ_PERMISSION_READ)) {
-                startMediaActivity(config, 1);
+        PermissionTip permissionTip = requestConfig.permissionTip;
+        if (requestConfig.actionType == ActionType.PICK_PHOTO) {// 选照片
+            binding.tvTitle.setText(permissionTip.getStorageTitle());
+            binding.tvContent.setText(permissionTip.getStorageContent());
+            if (checkPermissions(getImagePermission(), REQUEST_IMAGE)) {
+                startMediaActivity(requestConfig, 1);
             }
-        } else if (config.actionType == ActionType.PICK_VIDEO) {// 选视频
-            if (checkPermissions(getVideoPermission(), REQ_PERMISSION_VIDEO)) {
-                startMediaActivity(config, 3);
+        } else if (requestConfig.actionType == ActionType.PICK_VIDEO) {// 选视频
+            binding.tvTitle.setText(permissionTip.getStorageTitle());
+            binding.tvContent.setText(permissionTip.getStorageContent());
+            if (checkPermissions(getVideoPermission(), REQUEST_VIDEO)) {
+                startMediaActivity(requestConfig, 2);
             }
-        } else if (config.actionType == ActionType.TAKE_PHOTO) {// 拍照
+        } else if (requestConfig.actionType == ActionType.TAKE_PHOTO) {// 拍照
+            binding.tvTitle.setText(permissionTip.getCameraTitle());
+            binding.tvContent.setText(permissionTip.getCameraContent());
             String[] permissions = new String[]{Manifest.permission.CAMERA};
-            if (checkPermissions(permissions, REQ_PERMISSION_CAMERA)) {
-                startMediaActivity(config, 2);
+            if (checkPermissions(permissions, REQUEST_CAMERA)) {
+                startMediaActivity(requestConfig, 3);
             }
         }
     }
@@ -102,15 +111,6 @@ public class PermissionActivity extends AppCompatActivity {
             ClipImageActivity.openActivity(this, config, requestCode);
         } else {
             SelectorActivity.openActivity(this, config, requestCode);
-        }
-    }
-
-    private void processPermissionResult(int[] grantResults, String message) {
-        if (checkGrantResults(grantResults)) {
-            initPermissionLogic();
-        } else {
-            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
-            finish();
         }
     }
 
@@ -150,19 +150,20 @@ public class PermissionActivity extends AppCompatActivity {
         }
     }
 
-   /* private void showExceptionDialog() {
+    private void showExceptionDialog(String message) {
         new AlertDialog.Builder(this)
                 .setCancelable(false)
-                .setTitle(R.string.selector_hint)
-                .setMessage(R.string.selector_permissions_hint)
+                .setTitle("提示")
+                .setMessage(message)
                 .setNegativeButton(R.string.selector_cancel, (dialog, which) -> {
                     dialog.cancel();
                     finish();
-                }).setPositiveButton(R.string.selector_confirm, (dialog, which) -> {
+                })
+                .setPositiveButton(R.string.selector_confirm, (dialog, which) -> {
+                    Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                    Uri uri = Uri.fromParts("package", getPackageName(), null);
+                    startActivityForResult(intent.setData(uri), REQUEST_APPLY);
                     dialog.cancel();
-                    Uri uri = Uri.parse("package:" + getPackageName());
-                    Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, uri);
-                    startActivity(intent);
                 }).show();
-    }*/
+    }
 }
