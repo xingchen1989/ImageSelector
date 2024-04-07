@@ -13,6 +13,12 @@
         android:text="单选" />
 
     <Button
+        android:id="@+id/btn_single_camera"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="单选拍照" />
+
+    <Button
         android:id="@+id/btn_single_no_camera"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

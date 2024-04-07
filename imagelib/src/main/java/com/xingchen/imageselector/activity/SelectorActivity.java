@@ -114,7 +114,7 @@ public class SelectorActivity extends AppCompatActivity {
                 ArrayList<Uri> imageContentUris = new ArrayList<>();
                 imageContentUris.add(cameraUri);
                 saveImageAndFinish(imageContentUris);
-            }
+            }else finish();
         } else if (requestCode == ImageSelector.REQ_VIDEO_CODE) {
             if (resultCode == RESULT_OK && data != null) {
                 ArrayList<Uri> videoContentUris = new ArrayList<>();
