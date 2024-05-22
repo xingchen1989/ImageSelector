@@ -140,14 +140,15 @@ public class MediaModel {
                 MediaStore.Images.Media.DATE_ADDED,
                 MediaStore.Images.Media.MIME_TYPE,
         };
+        String sortOrder = MediaStore.Images.Media.DATE_ADDED + " DESC";
         Cursor mCursor = contentResolver.query(
                 MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                projection, null, null, MediaStore.Images.Media.DATE_ADDED + " DESC"
+                projection, null, null, sortOrder
         );
         if (mCursor != null) {
             while (mCursor.moveToNext()) {
                 //获取图片的id
-                long id = mCursor.getLong(mCursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID));
+                long mediaId = mCursor.getLong(mCursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID));
                 //获取图片时间
                 long addTime = mCursor.getLong(mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED));
                 //获取图片路径
@@ -155,7 +156,7 @@ public class MediaModel {
                 //获取图片类型
                 String type = mCursor.getString(mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.MIME_TYPE));
                 //获取图片uri
-                Uri mediaUri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
+                Uri mediaUri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, mediaId);
                 //在这里可以处理每张图片的ID、名称和URI
                 mTotalMedias.add(new MediaData(getFolderName(mediaPath), type, mediaUri, addTime));
             }
